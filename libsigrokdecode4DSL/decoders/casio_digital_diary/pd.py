@@ -1,4 +1,7 @@
 import sigrokdecode as srd
+from dataclasses import dataclass
+from typing import List
+
 
 
 def _get_annotation_index(annotations, name):
@@ -6,6 +9,18 @@ def _get_annotation_index(annotations, name):
         if annotation[0] == name:
             return index
     raise RuntimeError(f"Unknown annotation {repr(name)}: {repr(annotations)}")
+
+@dataclass
+class Frame:
+    length: int
+    frame_type: int
+    address: int
+    data: List[int]
+    checksum: int
+
+    @classmethod
+    def new_empty(cls):
+        return cls(0, 0, 0, [], 0)
 
 
 class Decoder(srd.Decoder):
@@ -72,25 +87,22 @@ class Decoder(srd.Decoder):
     binary = tuple()
     tags = ["PC"]
 
-    def __init__(self):
-        self.reset()
+    ##
+    ## Private
+    ##
 
-    def start(self):
-        """
-        This function is called before the beginning of the decoding. This is the
-        place to register() the output types, check the user-supplied PD options for
-         validity, and so on.
-        """
-        self.out_ann = self.register(srd.OUTPUT_ANN)
+    # Helpers
 
-    def reset(self):
-        """
-        This function is called before the beginning of the decoding. This is the
-        place to reset variables internal to your protocol decoder to their initial
-        state, such as state machines and counters.
-        """
-        self._state = "sync_or_frame"
-        self._frame_header = {}
+    def _decode_hex(self, data):
+        if not hasattr(self, "_hex_high_value"):
+            self._hex_high_value = chr(data)
+            return
+        else:
+            hex_value = int(self._hex_high_value + chr(data), 16)
+            delattr(self, "_hex_high_value")
+            return hex_value
+
+    # Receiver
 
     def _decode_receiver(self, startsample, endsample, data):
         print("<", hex(data))
@@ -131,208 +143,210 @@ class Decoder(srd.Decoder):
             ],
         )
 
-    def _decode_hex(self, data):
-        if not hasattr(self, "_hex_high_value"):
-            self._hex_high_value = chr(data)
-            return
+    # Sender
+
+    def _decode_sender_sync_or_frame(self, startsample, endsample, data):
+        print("_decode_sender_sync_or_frame")
+        # Sync 1/2
+        if data == ord("\r"):
+            print("  Sync 1/2")
+            self.put(
+                startsample,
+                endsample,
+                self.out_ann,
+                [
+                    _get_annotation_index(self.annotations, "sender-sync"),
+                    ["Sync 1/2"],
+                ],
+            )
+            self._sender_decode_function = self._decode_sender_sync
+            return True
+        # Frame start
+        if data == ord(":"):
+            print("  Frame start")
+            self._frame_startsample = startsample
+            self.put(
+                startsample,
+                endsample,
+                self.out_ann,
+                [
+                    _get_annotation_index(self.annotations, "sender-frame-start"),
+                    ["Start"],
+                ],
+            )
+            self._sender_decode_function = self._decode_sender_frame_header_length
+            return True
+
+    def _decode_sender_sync(self, startsample, endsample, data):
+        print("_decode_sender_sync")
+        if data is ord("\n"):
+            print("  Sync 2/2")
+            self.put(
+                startsample,
+                endsample,
+                self.out_ann,
+                [
+                    _get_annotation_index(self.annotations, "sender-sync"),
+                    ["Sync 2/2"],
+                ],
+            )
+            self._sender_decode_function = self._decode_sender_sync_or_frame
+            return True
+
+    def _decode_sender_frame_header_length(self, startsample, endsample, data):
+        print("_decode_sender_frame_header_length")
+        value = self._decode_hex(data)
+        if value is not None:
+            self._frame_header["length"] = value
+            print("  Length")
+            self.put(
+                self._chunk_startsample,
+                endsample,
+                self.out_ann,
+                [
+                    _get_annotation_index(self.annotations, "sender-frame-header"),
+                    ["Length: " + hex(value)],
+                ],
+            )
+            self._sender_decode_function = self._decode_sender_frame_header_type
         else:
-            hex_value = int(self._hex_high_value + chr(data), 16)
-            delattr(self, "_hex_high_value")
-            return hex_value
+            self._chunk_startsample = startsample
+        return True
 
-    def _decode_sender(self, startsample, endsample, data):
-        print(">", hex(data))
+    def _decode_sender_frame_header_type(self, startsample, endsample, data):
+        print("_decode_sender_frame_header_type")
+        value = self._decode_hex(data)
+        if value is not None:
+            self._frame_header["type"] = value
+            print("  Type")
+            self.put(
+                self._chunk_startsample,
+                endsample,
+                self.out_ann,
+                [
+                    _get_annotation_index(self.annotations, "sender-frame-header"),
+                    ["Type: " + hex(value)],
+                ],
+            )
+            self._sender_decode_function = self._decode_sender_frame_header_address_high
+        else:
+            self._chunk_startsample = startsample
+        return True
 
-        if self._state in ["sync_or_frame"]:
-            # Sync 1/2
-            if data == ord("\r"):
-                print("  Sync 1/2")
-                self.put(
-                    startsample,
-                    endsample,
-                    self.out_ann,
-                    [
-                        _get_annotation_index(self.annotations, "sender-sync"),
-                        ["Sync 1/2"],
-                    ],
-                )
-                self._state = "sync"
-                return
-            # Frame start
-            if data == ord(":"):
-                print("  Frame start")
-                self._frame_startsample = startsample
-                self.put(
-                    startsample,
-                    endsample,
-                    self.out_ann,
-                    [
-                        _get_annotation_index(self.annotations, "sender-frame-start"),
-                        ["Start"],
-                    ],
-                )
-                self._state = "frame_header_length"
-                return
+    def _decode_sender_frame_header_address_high(self, startsample, endsample, data):
+        print("_decode_sender_frame_header_address_high")
+        value = self._decode_hex(data)
+        if value is not None:
+            self._frame_header["address_high"] = value
+            self._sender_decode_function = self._decode_sender_frame_header_address_low
+        else:
+            self._chunk_startsample = startsample
+        return True
 
-        # Sync 2/2
-        if self._state == "sync":
-            if data is ord("\n"):
-                print("  Sync 2/2")
-                self.put(
-                    startsample,
-                    endsample,
-                    self.out_ann,
-                    [
-                        _get_annotation_index(self.annotations, "sender-sync"),
-                        ["Sync 2/2"],
-                    ],
-                )
-                self._state = "sync_or_frame"
-                return
+    def _decode_sender_frame_header_address_low(self, startsample, endsample, data):
+        print("_decode_sender_frame_header_address_low")
+        value = self._decode_hex(data)
+        if value is not None:
+            self._frame_header["address_low"] = value
+            self._frame_header["address"] = (
+                self._frame_header["address_high"] << 8
+            ) | (self._frame_header["address_low"] & 0xFF)
+            print("  Address")
+            self.put(
+                self._chunk_startsample,
+                endsample,
+                self.out_ann,
+                [
+                    _get_annotation_index(self.annotations, "sender-frame-header"),
+                    ["Address: " + hex(self._frame_header["address"])],
+                ],
+            )
+            self._sender_decode_function = self._decode_sender_frame_data
+            self._frame_data = []
+            self._data_count = self._frame_header["length"]
+        return True
 
-        # Frame: Header: Length
-        if self._state == "frame_header_length":
+    def _decode_sender_frame_data(self, startsample, endsample, data):
+        print("_decode_sender_frame_data")
+        if self._data_count > 0:
             value = self._decode_hex(data)
             if value is not None:
-                self._frame_header["length"] = value
-                print("  Length")
+                self._chunk_endsample = endsample
+                self._frame_data.append(value)
+                self._data_count = self._data_count - 1
+            else:
+                if self._data_count == self._frame_header["length"]:
+                    self._chunk_startsample = startsample
+            return True
+        else:
+            if self._frame_header["length"] > 0:
                 self.put(
                     self._chunk_startsample,
-                    endsample,
-                    self.out_ann,
-                    [
-                        _get_annotation_index(self.annotations, "sender-frame-header"),
-                        ["Length: " + hex(value)],
-                    ],
-                )
-                self._state = "frame_header_type"
-            else:
-                self._chunk_startsample = startsample
-            return
-
-        # Frame: Header: Type
-        if self._state == "frame_header_type":
-            value = self._decode_hex(data)
-            if value is not None:
-                self._frame_header["type"] = value
-                print("  Type")
-                self.put(
-                    self._chunk_startsample,
-                    endsample,
-                    self.out_ann,
-                    [
-                        _get_annotation_index(self.annotations, "sender-frame-header"),
-                        ["Type: " + hex(value)],
-                    ],
-                )
-                self._state = "frame_header_address_high"
-            else:
-                self._chunk_startsample = startsample
-            return
-
-        # Frame: Header: Address
-        if self._state == "frame_header_address_high":
-            value = self._decode_hex(data)
-            if value is not None:
-                self._frame_header["address_high"] = value
-                self._state = "frame_header_address_low"
-            else:
-                self._chunk_startsample = startsample
-            return
-        if self._state == "frame_header_address_low":
-            value = self._decode_hex(data)
-            if value is not None:
-                self._frame_header["address_low"] = value
-                self._frame_header["address"] = (
-                    self._frame_header["address_high"] << 8
-                ) | (self._frame_header["address_low"] & 0xFF)
-                self.put(
-                    self._chunk_startsample,
-                    endsample,
-                    self.out_ann,
-                    [
-                        _get_annotation_index(self.annotations, "sender-frame-header"),
-                        ["Address: " + hex(self._frame_header["address"])],
-                    ],
-                )
-                self._state = "frame_data"
-                self._frame_data = []
-                self._data_count = self._frame_header["length"]
-            return
-
-        # Frame: Data
-        if self._state == "frame_data":
-            if self._data_count > 0:
-                value = self._decode_hex(data)
-                if value is not None:
-                    self._chunk_endsample = endsample
-                    self._frame_data.append(value)
-                    self._data_count = self._data_count - 1
-                else:
-                    if self._data_count == self._frame_header["length"]:
-                        self._chunk_startsample = startsample
-                return
-            else:
-                if self._frame_header["length"] > 0:
-                    self.put(
-                        self._chunk_startsample,
-                        self._chunk_endsample,
-                        self.out_ann,
-                        [
-                            _get_annotation_index(
-                                self.annotations, "sender-frame-data"
-                            ),
-                            ["".join(map(chr, self._frame_data))],
-                        ],
-                    )
-                self._state = "frame_checksum"
-
-        # Frame: Checksum
-        if self._state == "frame_checksum":
-            value = self._decode_hex(data)
-            if value is not None:
-                self._frame_header["checksum"] = value
-                print("  Checksum")
-                self.put(
-                    self._chunk_startsample,
-                    endsample,
+                    self._chunk_endsample,
                     self.out_ann,
                     [
                         _get_annotation_index(
-                            self.annotations, "sender-frame-checksum"
+                            self.annotations, "sender-frame-data"
                         ),
-                        ["Checksum: " + hex(value)],
+                        ["".join(map(chr, self._frame_data))],
                     ],
                 )
+            self._sender_decode_function = self._decode_sender_frame_checksum
+            if self._sender_decode_function(startsample, endsample, data):
+                return True
+
+    def _decode_sender_frame_checksum(self, startsample, endsample, data):
+        print("_decode_sender_frame_checksum")
+        value = self._decode_hex(data)
+        if value is not None:
+            self._frame_header["checksum"] = value
+            print("  Checksum")
+            self.put(
+                self._chunk_startsample,
+                endsample,
+                self.out_ann,
+                [
+                    _get_annotation_index(
+                        self.annotations, "sender-frame-checksum"
+                    ),
+                    ["Checksum: " + hex(value)],
+                ],
+            )
+            self.put(
+                self._frame_startsample,
+                endsample,
+                self.out_ann,
+                [
+                    _get_annotation_index(self.annotations, "sender-frame"),
+                    [
+                        "Frame: type="
+                        + hex(self._frame_header["type"])
+                        + " address="
+                        + hex(self._frame_header["address"])
+                        + " "
+                        + "".join(map(chr, self._frame_data))
+                    ],
+                ],
+            )
+            if self._frame_header["type"] == 0x80:
                 self.put(
                     self._frame_startsample,
                     endsample,
                     self.out_ann,
                     [
-                        _get_annotation_index(self.annotations, "sender-frame"),
-                        [
-                            "Frame: type="
-                            + hex(self._frame_header["type"])
-                            + " address="
-                            + hex(self._frame_header["address"])
-                            + " "
-                            + "".join(map(chr, self._frame_data))
-                        ],
+                        _get_annotation_index(self.annotations, "sender-data"),
+                        ["Data:" + "".join(map(chr, self._frame_data))],
                     ],
                 )
-                if self._frame_header["type"] == 0x80:
-                    self.put(
-                        self._frame_startsample,
-                        endsample,
-                        self.out_ann,
-                        [
-                            _get_annotation_index(self.annotations, "sender-data"),
-                            ["Memo:" + "".join(map(chr, self._frame_data))],
-                        ],
-                    )
-                self._state = "sync_or_frame"
-            else:
-                self._chunk_startsample = startsample
+            self._sender_decode_function = self._decode_sender_sync_or_frame
+        else:
+            self._chunk_startsample = startsample
+        return True
+
+    def _decode_sender(self, startsample, endsample, data):
+        print(">", hex(data))
+
+        if self._sender_decode_function(startsample, endsample, data):
             return
 
         # Warning
@@ -346,6 +360,31 @@ class Decoder(srd.Decoder):
                 ["?"],
             ],
         )
+        self._sender_decode_function = self._decode_sender_sync_or_frame
+
+    ##
+    ## Public
+    ##
+
+    def __init__(self):
+        self.reset()
+
+    def start(self):
+        """
+        This function is called before the beginning of the decoding. This is the
+        place to register() the output types, check the user-supplied PD options for
+         validity, and so on.
+        """
+        self.out_ann = self.register(srd.OUTPUT_ANN)
+
+    def reset(self):
+        """
+        This function is called before the beginning of the decoding. This is the
+        place to reset variables internal to your protocol decoder to their initial
+        state, such as state machines and counters.
+        """
+        self._sender_decode_function = self._decode_sender_sync_or_frame
+        self._frame_header = {}
 
     def decode(self, startsample, endsample, data):
         """
