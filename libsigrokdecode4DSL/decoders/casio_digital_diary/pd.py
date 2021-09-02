@@ -17,10 +17,63 @@ class Frame:
     address: int
     data: List[int]
     checksum: int
+    startsample: int
+    endsample: int
 
     @classmethod
     def new_empty(cls):
-        return cls(0, 0, 0, [], 0)
+        return cls(0, 0, 0, [], 0, 0, 0)
+
+    def get_data_str(self):
+        return "".join(
+            chr(d) if chr(d).isprintable() else f"({hex(d)})" for d in self.data
+        )
+
+    def get_frame_type_str(self):
+        if self.frame_type == 0x0:
+            if self.address == 0xFF and self.length == 0:
+                return "End of Data"
+            if self.address == 0x2:
+                return "Start of data (TODO self.data)"
+            if self.address == 0x1 and self.length == 0:
+                return "Record End"
+            return "Marker?"
+        if self.frame_type == 0x71 and self.length == 1 and self.data == [0x01]:
+            return "Record Start"
+
+        if self.frame_type == 0x80:
+            return "Data: " + self.get_data_str()
+        return hex(self.frame_type)
+
+    def __str__(self):
+        return (
+            "type="
+            + hex(self.frame_type)
+            + " address="
+            + hex(self.address)
+            + " length="
+            + hex(self.length)
+        )
+
+
+class Packet:
+    def __init__(self):
+        self._frames = []
+
+    def _is_last(self, frame):
+        return True  # TODO
+
+    def add_frame(self, frame) -> bool:
+        if len(self._frames) == 0:
+            self.startsample = frame.startsample
+        self._frames.append(frame)
+        if self._is_last(frame):
+            self.endsample = frame.endsample
+            return False
+        return True
+
+    def __str__(self):
+        return self._frames[0].get_frame_type_str()
 
 
 class Decoder(srd.Decoder):
@@ -56,7 +109,7 @@ class Decoder(srd.Decoder):
         ("sender-frame-data", "Sender Frame Data"),
         ("sender-frame-checksum", "Sender Frame Checksum"),
         ("sender-frame", "Sender Frame"),
-        ("sender-data", "Sender Data"),
+        ("sender-packet", "Sender Packet"),
         ("warning", "Warning"),
     )
     annotation_rows = (
@@ -78,9 +131,9 @@ class Decoder(srd.Decoder):
             (_get_annotation_index(annotations, "sender-frame"),),
         ),
         (
-            "sender-data",
-            "Sender Data",
-            (_get_annotation_index(annotations, "sender-data"),),
+            "sender-packet",
+            "Sender Packet",
+            (_get_annotation_index(annotations, "sender-packet"),),
         ),
         ("warning", "Warning", (_get_annotation_index(annotations, "warning"),)),
     )
@@ -164,7 +217,7 @@ class Decoder(srd.Decoder):
         # Frame start
         if data == ord(":"):
             print("  Frame start")
-            self._frame_startsample = startsample
+            self._frame.startsample = startsample
             self.put(
                 startsample,
                 endsample,
@@ -263,7 +316,6 @@ class Decoder(srd.Decoder):
                 ],
             )
             self._sender_decode_function = self._decode_sender_frame_data
-            self._frame_data = []
             self._data_count = self._frame.length
         return True
 
@@ -273,7 +325,7 @@ class Decoder(srd.Decoder):
             value = self._decode_hex(data)
             if value is not None:
                 self._chunk_endsample = endsample
-                self._frame_data.append(value)
+                self._frame.data.append(value)
                 self._data_count = self._data_count - 1
             else:
                 if self._data_count == self._frame.length:
@@ -287,7 +339,7 @@ class Decoder(srd.Decoder):
                     self.out_ann,
                     [
                         _get_annotation_index(self.annotations, "sender-frame-data"),
-                        ["".join(map(chr, self._frame_data))],
+                        [" ".join(hex(d) for d in self._frame.data)],
                     ],
                 )
             self._sender_decode_function = self._decode_sender_frame_checksum
@@ -299,10 +351,11 @@ class Decoder(srd.Decoder):
         value = self._decode_hex(data)
         if value is not None:
             self._frame.checksum = value
+            self._frame.endsample = endsample
             print("  Checksum")
             self.put(
                 self._chunk_startsample,
-                endsample,
+                self._frame.endsample,
                 self.out_ann,
                 [
                     _get_annotation_index(self.annotations, "sender-frame-checksum"),
@@ -310,31 +363,26 @@ class Decoder(srd.Decoder):
                 ],
             )
             self.put(
-                self._frame_startsample,
-                endsample,
+                self._frame.startsample,
+                self._frame.endsample,
                 self.out_ann,
                 [
                     _get_annotation_index(self.annotations, "sender-frame"),
-                    [
-                        "Frame: type="
-                        + hex(self._frame.frame_type)
-                        + " address="
-                        + hex(self._frame.address)
-                        + " "
-                        + "".join(map(chr, self._frame_data))
-                    ],
+                    [str(self._frame)],
                 ],
             )
-            if self._frame.frame_type == 0x80:
+            if not self._packet.add_frame(self._frame):
                 self.put(
-                    self._frame_startsample,
-                    endsample,
+                    self._packet.startsample,
+                    self._packet.endsample,
                     self.out_ann,
                     [
-                        _get_annotation_index(self.annotations, "sender-data"),
-                        ["Data:" + "".join(map(chr, self._frame_data))],
+                        _get_annotation_index(self.annotations, "sender-packet"),
+                        [str(self._packet)],
                     ],
                 )
+                self._packet = Packet()
+            self._frame = Frame.new_empty()
             self._sender_decode_function = self._decode_sender_sync_or_frame
         else:
             self._chunk_startsample = startsample
@@ -382,6 +430,7 @@ class Decoder(srd.Decoder):
         """
         self._sender_decode_function = self._decode_sender_sync_or_frame
         self._frame = Frame.new_empty()
+        self._packet = Packet()
         if hasattr(self, "_frame_address_high"):
             delattr(self, "_frame_address_high")
 
