@@ -27,13 +27,18 @@ class Frame:
     def get_type_str(self) -> str:
         if self.length == 0x2 and self.frame_type == 0x0 and self.address == 0x2:
             return "segment-start"
-        if self.frame_type == 0x71 and self.address == 0x0 and self.data == [0x01]:
+        if (
+            self.length == 0x1
+            and self.frame_type == 0x71
+            and self.address == 0x0
+            and self.data[0] in [0x1, 0x2, 0x4]
+        ):
             return "record-start"
         if self.frame_type == 0x80:
             return "data"
         if self.frame_type == 0x0 and self.address == 0x1 and self.length == 0x0:
             return "record-end"
-        if self.length == 0 and self.frame_type == 0x0 and self.address == 0xff:
+        if self.length == 0 and self.frame_type == 0x0 and self.address == 0xFF:
             return "finish"
         return "unknown"
 
@@ -52,7 +57,12 @@ class Frame:
             return "Unknown Data Segment Start"
 
         if type_str == "record-start":
-            return "Record Start"
+            color_map = {
+                0x1: "blue",
+                0x2: "orange",
+                0x4: "green",
+            }
+            return f"Record Start ({color_map[self.data[0]]})"
 
         if type_str == "data":
             return "Data: " + "".join(
