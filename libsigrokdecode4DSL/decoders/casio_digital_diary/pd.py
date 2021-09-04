@@ -24,56 +24,48 @@ class Frame:
     def new_empty(cls):
         return cls(0, 0, 0, [], 0, 0, 0)
 
-    def get_data_str(self):
-        return "".join(
-            chr(d) if chr(d).isprintable() else f"({hex(d)})" for d in self.data
-        )
+    def get_type_str(self) -> str:
+        if self.length == 0x2 and self.frame_type == 0x0 and self.address == 0x2:
+            return "segment-start"
+        if self.frame_type == 0x71 and self.address == 0x0 and self.data == [0x01]:
+            return "record-start"
+        if self.frame_type == 0x80:
+            return "data"
+        if self.frame_type == 0x0 and self.address == 0x1 and self.length == 0x0:
+            return "record-end"
+        if self.length == 0 and self.frame_type == 0x0 and self.address == 0xff:
+            return "finish"
+        return "unknown"
 
-    def get_frame_type_str(self):
-        if self.frame_type == 0x0:
-            if self.address == 0xFF and self.length == 0:
-                return "End of Data"
-            if self.address == 0x2:
-                return "Start of data (TODO self.data)"
-            if self.address == 0x1 and self.length == 0:
-                return "Record End"
-            return "Marker?"
-        if self.frame_type == 0x71 and self.length == 1 and self.data == [0x01]:
+    def __str__(self) -> str:
+        type_str = self.get_type_str()
+
+        if type_str == "segment-start":
+            if self.data == [0x90, 0x0]:
+                return "Telephone Segment Start"
+            if self.data == [0xC0, 0x0]:
+                return "Business Card Segment Start"
+            if self.data == [0xC1, 0x0]:
+                return "TO DO Segment Start"
+            if self.data == [0xA0, 0x0]:
+                return "Memo Segment Start"
+            return "Unknown Data Segment Start"
+
+        if type_str == "record-start":
             return "Record Start"
 
-        if self.frame_type == 0x80:
-            return "Data: " + self.get_data_str()
-        return hex(self.frame_type)
+        if type_str == "data":
+            return "Data: " + "".join(
+                chr(d) if chr(d).isprintable() else f"({hex(d)})" for d in self.data
+            )
 
-    def __str__(self):
-        return (
-            "type="
-            + hex(self.frame_type)
-            + " address="
-            + hex(self.address)
-            + " length="
-            + hex(self.length)
-        )
+        if type_str == "record-end":
+            return "Record End"
 
+        if type_str == "finish":
+            return "Finish"
 
-class Packet:
-    def __init__(self):
-        self._frames = []
-
-    def _is_last(self, frame):
-        return True  # TODO
-
-    def add_frame(self, frame) -> bool:
-        if len(self._frames) == 0:
-            self.startsample = frame.startsample
-        self._frames.append(frame)
-        if self._is_last(frame):
-            self.endsample = frame.endsample
-            return False
-        return True
-
-    def __str__(self):
-        return self._frames[0].get_frame_type_str()
+        return "Unknown"
 
 
 class Decoder(srd.Decoder):
@@ -102,40 +94,64 @@ class Decoder(srd.Decoder):
         },
     )
     annotations = (
-        ("receiver", "Receiver"),
-        ("sender-sync", "Sender Frame Sync"),
-        ("sender-frame-start", "Sender Frame Start"),
-        ("sender-frame-header", "Sender Frame Header"),
-        ("sender-frame-data", "Sender Frame Data"),
-        ("sender-frame-checksum", "Sender Frame Checksum"),
-        ("sender-frame", "Sender Frame"),
-        ("sender-packet", "Sender Packet"),
-        ("warning", "Warning"),
+        ("sync", "Sync"),
+        ("frame-start", "Frame Start"),
+        ("frame-header", "Frame Header"),
+        ("frame-data", "Frame Data"),
+        ("frame-checksum", "Frame Checksum"),
+        ("frame-type-segment-start", "Segment Start Frame"),
+        ("frame-type-record-start", "Record Start Frame"),
+        ("frame-type-data", "Data Frame"),
+        ("frame-type-record-end", "Record End Frame"),
+        ("frame-type-finish", "Finish Frame"),
+        ("frame-type-unknown", "Unknown Frame"),
+        ("sender-warning", "Sender Warning"),
+        ("receiver-ready", "Receiver Ready"),
+        ("receiver-ack", "Receiver Ack"),
+        ("receiver-warning", "Receiver Warning"),
     )
     annotation_rows = (
-        ("receiver", "Receiver", (_get_annotation_index(annotations, "receiver"),)),
         (
-            "sender-decoded",
-            "Sender Decoded",
+            "sender",
+            "Sender",
             (
-                _get_annotation_index(annotations, "sender-sync"),
-                _get_annotation_index(annotations, "sender-frame-start"),
-                _get_annotation_index(annotations, "sender-frame-header"),
-                _get_annotation_index(annotations, "sender-frame-data"),
-                _get_annotation_index(annotations, "sender-frame-checksum"),
+                _get_annotation_index(annotations, "sync"),
+                _get_annotation_index(annotations, "frame-start"),
+                _get_annotation_index(annotations, "frame-header"),
+                _get_annotation_index(annotations, "frame-data"),
+                _get_annotation_index(annotations, "frame-checksum"),
             ),
         ),
         (
-            "sender-frame",
-            "Sender Frame",
-            (_get_annotation_index(annotations, "sender-frame"),),
+            "frame",
+            "Frame",
+            (
+                _get_annotation_index(annotations, "frame-type-segment-start"),
+                _get_annotation_index(annotations, "frame-type-record-start"),
+                _get_annotation_index(annotations, "frame-type-data"),
+                _get_annotation_index(annotations, "frame-type-record-end"),
+                _get_annotation_index(annotations, "frame-type-finish"),
+                _get_annotation_index(annotations, "frame-type-unknown"),
+            ),
         ),
         (
-            "sender-packet",
-            "Sender Packet",
-            (_get_annotation_index(annotations, "sender-packet"),),
+            "sender-warning",
+            "Sender Warning",
+            (_get_annotation_index(annotations, "sender-warning"),),
         ),
-        ("warning", "Warning", (_get_annotation_index(annotations, "warning"),)),
+        (
+            "receiver",
+            "Receiver",
+            (
+                _get_annotation_index(annotations, "receiver-ready"),
+                _get_annotation_index(annotations, "receiver-ack"),
+            ),
+        ),
+        (
+            "receiver-warning",
+            "Receiver Warning",
+            (_get_annotation_index(annotations, "receiver-warning"),),
+        ),
     )
     binary = tuple()
     tags = ["PC"]
@@ -160,27 +176,27 @@ class Decoder(srd.Decoder):
     def _decode_receiver(self, startsample, endsample, data):
         print("<", hex(data))
         if data == 0x11:
-            print("  XON", hex(data))
+            print("  Ready", hex(data))
             self.put(
                 startsample,
                 endsample,
                 self.out_ann,
                 [
-                    _get_annotation_index(self.annotations, "receiver"),
-                    ["XON"],
+                    _get_annotation_index(self.annotations, "receiver-ready"),
+                    ["Ready"],
                 ],
             )
             return
 
         if data == 0x23:
-            print("  ACK", hex(data))
+            print("  Ack", hex(data))
             self.put(
                 startsample,
                 endsample,
                 self.out_ann,
                 [
-                    _get_annotation_index(self.annotations, "receiver"),
-                    ["ACK"],
+                    _get_annotation_index(self.annotations, "receiver-ack"),
+                    ["Ack"],
                 ],
             )
             return
@@ -191,7 +207,7 @@ class Decoder(srd.Decoder):
             endsample,
             self.out_ann,
             [
-                _get_annotation_index(self.annotations, "warning"),
+                _get_annotation_index(self.annotations, "receiver-warning"),
                 ["?"],
             ],
         )
@@ -208,7 +224,7 @@ class Decoder(srd.Decoder):
                 endsample,
                 self.out_ann,
                 [
-                    _get_annotation_index(self.annotations, "sender-sync"),
+                    _get_annotation_index(self.annotations, "sync"),
                     ["Sync 1/2"],
                 ],
             )
@@ -223,7 +239,7 @@ class Decoder(srd.Decoder):
                 endsample,
                 self.out_ann,
                 [
-                    _get_annotation_index(self.annotations, "sender-frame-start"),
+                    _get_annotation_index(self.annotations, "frame-start"),
                     ["Start"],
                 ],
             )
@@ -239,7 +255,7 @@ class Decoder(srd.Decoder):
                 endsample,
                 self.out_ann,
                 [
-                    _get_annotation_index(self.annotations, "sender-sync"),
+                    _get_annotation_index(self.annotations, "sync"),
                     ["Sync 2/2"],
                 ],
             )
@@ -257,7 +273,7 @@ class Decoder(srd.Decoder):
                 endsample,
                 self.out_ann,
                 [
-                    _get_annotation_index(self.annotations, "sender-frame-header"),
+                    _get_annotation_index(self.annotations, "frame-header"),
                     ["Length: " + hex(value)],
                 ],
             )
@@ -277,7 +293,7 @@ class Decoder(srd.Decoder):
                 endsample,
                 self.out_ann,
                 [
-                    _get_annotation_index(self.annotations, "sender-frame-header"),
+                    _get_annotation_index(self.annotations, "frame-header"),
                     ["Type: " + hex(value)],
                 ],
             )
@@ -311,7 +327,7 @@ class Decoder(srd.Decoder):
                 endsample,
                 self.out_ann,
                 [
-                    _get_annotation_index(self.annotations, "sender-frame-header"),
+                    _get_annotation_index(self.annotations, "frame-header"),
                     ["Address: " + hex(self._frame.address)],
                 ],
             )
@@ -338,7 +354,7 @@ class Decoder(srd.Decoder):
                     self._chunk_endsample,
                     self.out_ann,
                     [
-                        _get_annotation_index(self.annotations, "sender-frame-data"),
+                        _get_annotation_index(self.annotations, "frame-data"),
                         [" ".join(hex(d) for d in self._frame.data)],
                     ],
                 )
@@ -358,7 +374,7 @@ class Decoder(srd.Decoder):
                 self._frame.endsample,
                 self.out_ann,
                 [
-                    _get_annotation_index(self.annotations, "sender-frame-checksum"),
+                    _get_annotation_index(self.annotations, "frame-checksum"),
                     ["Checksum: " + hex(value)],
                 ],
             )
@@ -367,21 +383,12 @@ class Decoder(srd.Decoder):
                 self._frame.endsample,
                 self.out_ann,
                 [
-                    _get_annotation_index(self.annotations, "sender-frame"),
+                    _get_annotation_index(
+                        self.annotations, f"frame-type-{self._frame.get_type_str()}"
+                    ),
                     [str(self._frame)],
                 ],
             )
-            if not self._packet.add_frame(self._frame):
-                self.put(
-                    self._packet.startsample,
-                    self._packet.endsample,
-                    self.out_ann,
-                    [
-                        _get_annotation_index(self.annotations, "sender-packet"),
-                        [str(self._packet)],
-                    ],
-                )
-                self._packet = Packet()
             self._frame = Frame.new_empty()
             self._sender_decode_function = self._decode_sender_sync_or_frame
         else:
@@ -401,7 +408,7 @@ class Decoder(srd.Decoder):
             endsample,
             self.out_ann,
             [
-                _get_annotation_index(self.annotations, "warning"),
+                _get_annotation_index(self.annotations, "sender-warning"),
                 ["?"],
             ],
         )
@@ -430,7 +437,6 @@ class Decoder(srd.Decoder):
         """
         self._sender_decode_function = self._decode_sender_sync_or_frame
         self._frame = Frame.new_empty()
-        self._packet = Packet()
         if hasattr(self, "_frame_address_high"):
             delattr(self, "_frame_address_high")
 
