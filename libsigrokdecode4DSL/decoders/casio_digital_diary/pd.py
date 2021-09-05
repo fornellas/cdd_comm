@@ -13,54 +13,56 @@ def _get_annotation_index(annotations, name):
 @dataclass
 class Frame:
     length: int
-    frame_type: int
-    address: int
+    frame_type: List[int]
     data: List[int]
     checksum: int
     startsample: int
     endsample: int
 
+    _text_types = {
+        0x0: "Name",
+    }
+
     @classmethod
     def new_empty(cls):
-        return cls(0, 0, 0, [], 0, 0, 0)
+        return cls(0, [], [], 0, 0, 0)
 
     def get_type_str(self) -> str:
-        if self.length == 0x2 and self.frame_type == 0x0 and self.address == 0x2:
+        if self.length == 0x2 and self.frame_type == [0x0, 0x0, 0x2]:
             return "segment-start"
         if (
             self.length == 0x1
-            and self.frame_type == 0x71
-            and self.address == 0x0
+            and self.frame_type == [0x71, 0x0, 0x0]
             and self.data[0] in [0x1, 0x2, 0x4]
         ):
             return "color"
-        if self.length == 0xA and self.frame_type == 0xF0 and self.address == 0x0:
+        if self.length == 0xA and self.frame_type == [0xF0, 0x0, 0x0]:
             return "date"
-        if self.length == 0xA and self.frame_type == 0xF4 and self.address == 0x0:
+        if self.length == 0xA and self.frame_type == [0xF4, 0x0, 0x0]:
             return "todo-date"
-        if self.length == 0x1 and self.frame_type == 0x72 and self.address == 0x0:
+        if self.length == 0x1 and self.frame_type == [0x72, 0x0, 0x0]:
             return "todo-priority"
-        if self.length == 0x5 and self.frame_type == 0xE4 and self.address == 0x0:
+        if self.length == 0x5 and self.frame_type == [0xE4, 0x0, 0x0]:
             return "todo-time"
-        if self.length == 0x5 and self.frame_type == 0xC4 and self.address == 0x0:
+        if self.length == 0x5 and self.frame_type == [0xC4, 0x0, 0x0]:
             return "todo-alarm"
-        if self.length == 0x20 and self.frame_type == 0x78 and self.address == 0x0:
+        if self.length == 0x20 and self.frame_type == [0x78, 0x0, 0x0]:
             return "calendar-date-color-highlight"
-        if (
-            self.length in [0xB, 0x5]
-            and self.frame_type == 0xE0
-            and self.address == 0x0
-        ):
+        if self.length in [0xB, 0x5] and self.frame_type == [0xE0, 0x0, 0x0]:
             return "time"
-        if self.length == 0x5 and self.frame_type == 0xC0 and self.address == 0x0:
+        if self.length == 0x5 and self.frame_type == [0xC0, 0x0, 0x0]:
             return "alarm"
-        if self.length == 0x1 and self.frame_type == 0x21 and self.address == 0x00:
+        if self.length == 0x1 and self.frame_type == [0x21, 0x0, 0x0]:
             return "illustration"
-        if self.frame_type == 0x80:
+        if (
+            self.frame_type[0] == 0x80
+            and self.frame_type[1] in self._text_types.keys()
+            and self.frame_type[2] == 0x0
+        ):
             return "text"
-        if self.frame_type == 0x0 and self.address == 0x1 and self.length == 0x0:
+        if self.length == 0x0 and self.frame_type == [0x0, 0x0, 0x1]:
             return "record-end"
-        if self.length == 0 and self.frame_type == 0x0 and self.address == 0xFF:
+        if self.length == 0 and self.frame_type == [0x0, 0x0, 0xFF]:
             return "finish"
         return "unknown"
 
@@ -139,7 +141,8 @@ class Frame:
             return f"Illustration: {self.data[0]}"
 
         if type_str == "text":
-            return "Text: " + "".join(
+            text_type = self._text_types.get(self.frame_type[1], "Unknown")
+            return f"{text_type}: " + "".join(
                 chr(d) if chr(d).isprintable() else f"({hex(d)})" for d in self.data
             )
 
@@ -380,49 +383,24 @@ class Decoder(srd.Decoder):
     def _decode_sender_frame_header_type(self, startsample, endsample, data):
         value = self._decode_hex(data)
         if value is not None:
-            self._frame.frame_type = value
-            self.put(
-                self._chunk_startsample,
-                endsample,
-                self.out_ann,
-                [
-                    _get_annotation_index(self.annotations, "frame-header"),
-                    ["Type: " + hex(value)],
-                ],
-            )
-            self._sender_decode_function = self._decode_sender_frame_header_address_high
-        else:
-            self._chunk_startsample = startsample
-        return True
+            if len(self._frame.frame_type) < 3:
+                self._frame.frame_type.append(value)
 
-    def _decode_sender_frame_header_address_high(self, startsample, endsample, data):
-        value = self._decode_hex(data)
-        if value is not None:
-            self._frame_address_high = value
-            self._sender_decode_function = self._decode_sender_frame_header_address_low
+            if len(self._frame.frame_type) == 3:
+                self.put(
+                    self._chunk_startsample,
+                    endsample,
+                    self.out_ann,
+                    [
+                        _get_annotation_index(self.annotations, "frame-header"),
+                        ["Type: " + " ".join(hex(v) for v in self._frame.frame_type)],
+                    ],
+                )
+                self._data_count = self._frame.length
+                self._sender_decode_function = self._decode_sender_frame_data
         else:
-            self._chunk_startsample = startsample
-        return True
-
-    def _decode_sender_frame_header_address_low(self, startsample, endsample, data):
-        value = self._decode_hex(data)
-        if value is not None:
-            frame_address_low = value
-            self._frame.address = (self._frame_address_high << 8) | (
-                frame_address_low & 0xFF
-            )
-            delattr(self, "_frame_address_high")
-            self.put(
-                self._chunk_startsample,
-                endsample,
-                self.out_ann,
-                [
-                    _get_annotation_index(self.annotations, "frame-header"),
-                    ["Address: " + hex(self._frame.address)],
-                ],
-            )
-            self._sender_decode_function = self._decode_sender_frame_data
-            self._data_count = self._frame.length
+            if not len(self._frame.frame_type):
+                self._chunk_startsample = startsample
         return True
 
     def _decode_sender_frame_data(self, startsample, endsample, data):
@@ -465,17 +443,29 @@ class Decoder(srd.Decoder):
                     ["Checksum: " + hex(value)],
                 ],
             )
-            self.put(
-                self._frame.startsample,
-                self._frame.endsample,
-                self.out_ann,
-                [
-                    _get_annotation_index(
-                        self.annotations, f"frame-type-{self._frame.get_type_str()}"
-                    ),
-                    [str(self._frame)],
-                ],
-            )
+            type_str = self._frame.get_type_str()
+            if type_str == "unknown":
+                self.put(
+                    self._frame.startsample,
+                    self._frame.endsample,
+                    self.out_ann,
+                    [
+                        _get_annotation_index(self.annotations, "sender-warning"),
+                        [str(self._frame)],
+                    ],
+                )
+            else:
+                self.put(
+                    self._frame.startsample,
+                    self._frame.endsample,
+                    self.out_ann,
+                    [
+                        _get_annotation_index(
+                            self.annotations, f"frame-type-{type_str}"
+                        ),
+                        [str(self._frame)],
+                    ],
+                )
             self._frame = Frame.new_empty()
             self._sender_decode_function = self._decode_sender_sync_or_frame
         else:
