@@ -152,6 +152,22 @@ class Frame:
             chr(d) if chr(d).isprintable() else f"({hex(d)})" for d in self.data
         )
 
+    def is_checksum_valid(self) -> bool:
+        checksum = (
+            self.length
+            + self.type
+            + ((self.address >> 8) & 0xFF)
+            + (self.address & 0xFF)
+            + sum(self.data)
+        )
+        checksum &= 0xFF
+        checksum = 0xFF - checksum
+        checksum += 1
+        if self.checksum == checksum:
+            return True
+        else:
+            return False
+
 
 class Decoder(srd.Decoder):
     api_version = 3
@@ -462,6 +478,16 @@ class Decoder(srd.Decoder):
                     ["Checksum: " + hex(value)],
                 ],
             )
+            if not self._frame.is_checksum_valid():
+                self.put(
+                    self._frame.startsample,
+                    self._frame.endsample,
+                    self.out_ann,
+                    [
+                        _get_annotation_index(self.annotations, "sender-warning"),
+                        ["Bad Checksum"],
+                    ],
+                )
             type_str = self._frame.get_type_str()
             if type_str == "unknown":
                 self.put(
