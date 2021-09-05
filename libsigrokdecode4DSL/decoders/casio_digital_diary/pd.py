@@ -33,7 +33,11 @@ class Frame:
             and self.address == 0x0
             and self.data[0] in [0x1, 0x2, 0x4]
         ):
-            return "record-start"
+            return "record-color"
+        if self.length == 0xa and self.frame_type == 0xf0 and self.address == 0x0:
+            return "calendar-date"
+        if self.length == 0x20 and self.frame_type == 0x78 and self.address == 0x0:
+            return "calendar-date-color-highlight"
         if self.frame_type == 0x80:
             return "data"
         if self.frame_type == 0x0 and self.address == 0x1 and self.length == 0x0:
@@ -50,19 +54,42 @@ class Frame:
                 return "Telephone Segment Start"
             if self.data == [0xC0, 0x0]:
                 return "Business Card Segment Start"
+            if self.data == [0x80, 0x0]:
+                return "Calendar Segment Start"
             if self.data == [0xC1, 0x0]:
                 return "TO DO Segment Start"
             if self.data == [0xA0, 0x0]:
                 return "Memo Segment Start"
             return "Unknown Data Segment Start"
 
-        if type_str == "record-start":
+        if type_str == "record-color":
             color_map = {
                 0x1: "blue",
                 0x2: "orange",
                 0x4: "green",
             }
             return f"Record Start ({color_map[self.data[0]]})"
+
+        if type_str == "calendar-date":
+            return "Date: " + "".join(
+                chr(d) if chr(d).isprintable() else f"({hex(d)})" for d in self.data
+            )
+
+        if type_str == "calendar-date-color-highlight":
+            info_list = []
+            for day, color_highlight in enumerate(reversed(self.data)):
+                if color_highlight & 0x1:
+                    color = "b"
+                if color_highlight & 0x4:
+                    color = "g"
+                if color_highlight & 0x2:
+                    color = "o"
+                highlight = ""
+                if color_highlight & 0x80:
+                    highlight = "*"
+                info_list.append(f"{day+1}{color}{highlight}")
+            info_str = " ".join(info_list)
+            return f"Highlight: {info_str}"
 
         if type_str == "data":
             return "Data: " + "".join(
@@ -75,7 +102,9 @@ class Frame:
         if type_str == "finish":
             return "Finish"
 
-        return "Unknown"
+        return "Unknown: " + "".join(
+            chr(d) if chr(d).isprintable() else f"({hex(d)})" for d in self.data
+        )
 
 
 class Decoder(srd.Decoder):
@@ -110,7 +139,9 @@ class Decoder(srd.Decoder):
         ("frame-data", "Frame Data"),
         ("frame-checksum", "Frame Checksum"),
         ("frame-type-segment-start", "Segment Start Frame"),
-        ("frame-type-record-start", "Record Start Frame"),
+        ("frame-type-record-color", "Record Color"),
+        ("frame-type-calendar-date", "Date"),
+        ("frame-type-calendar-date-color-highlight", "Calendar Date Color / Highlight"),
         ("frame-type-data", "Data Frame"),
         ("frame-type-record-end", "Record End Frame"),
         ("frame-type-finish", "Finish Frame"),
@@ -137,7 +168,9 @@ class Decoder(srd.Decoder):
             "Frame",
             (
                 _get_annotation_index(annotations, "frame-type-segment-start"),
-                _get_annotation_index(annotations, "frame-type-record-start"),
+                _get_annotation_index(annotations, "frame-type-record-color"),
+                _get_annotation_index(annotations, "frame-type-calendar-date"),
+                _get_annotation_index(annotations, "frame-type-calendar-date-color-highlight"),
                 _get_annotation_index(annotations, "frame-type-data"),
                 _get_annotation_index(annotations, "frame-type-record-end"),
                 _get_annotation_index(annotations, "frame-type-finish"),
@@ -184,9 +217,7 @@ class Decoder(srd.Decoder):
     # Receiver
 
     def _decode_receiver(self, startsample, endsample, data):
-        print("<", hex(data))
         if data == 0x11:
-            print("  Ready", hex(data))
             self.put(
                 startsample,
                 endsample,
@@ -199,7 +230,6 @@ class Decoder(srd.Decoder):
             return
 
         if data == 0x23:
-            print("  Ack", hex(data))
             self.put(
                 startsample,
                 endsample,
@@ -211,7 +241,6 @@ class Decoder(srd.Decoder):
             )
             return
 
-        print("  ?")
         self.put(
             startsample,
             endsample,
@@ -225,10 +254,8 @@ class Decoder(srd.Decoder):
     # Sender
 
     def _decode_sender_sync_or_frame(self, startsample, endsample, data):
-        print("  _decode_sender_sync_or_frame")
         # Sync 1/2
         if data == ord("\r"):
-            print("  Sync 1/2")
             self.put(
                 startsample,
                 endsample,
@@ -242,7 +269,6 @@ class Decoder(srd.Decoder):
             return True
         # Frame start
         if data == ord(":"):
-            print("  Frame start")
             self._frame.startsample = startsample
             self.put(
                 startsample,
@@ -257,9 +283,7 @@ class Decoder(srd.Decoder):
             return True
 
     def _decode_sender_sync(self, startsample, endsample, data):
-        print("  _decode_sender_sync")
         if data is ord("\n"):
-            print("  Sync 2/2")
             self.put(
                 startsample,
                 endsample,
@@ -273,11 +297,9 @@ class Decoder(srd.Decoder):
             return True
 
     def _decode_sender_frame_header_length(self, startsample, endsample, data):
-        print("  _decode_sender_frame_header_length")
         value = self._decode_hex(data)
         if value is not None:
             self._frame.length = value
-            print("  Length")
             self.put(
                 self._chunk_startsample,
                 endsample,
@@ -293,11 +315,9 @@ class Decoder(srd.Decoder):
         return True
 
     def _decode_sender_frame_header_type(self, startsample, endsample, data):
-        print("  _decode_sender_frame_header_type")
         value = self._decode_hex(data)
         if value is not None:
             self._frame.frame_type = value
-            print("  Type")
             self.put(
                 self._chunk_startsample,
                 endsample,
@@ -313,7 +333,6 @@ class Decoder(srd.Decoder):
         return True
 
     def _decode_sender_frame_header_address_high(self, startsample, endsample, data):
-        print("  _decode_sender_frame_header_address_high")
         value = self._decode_hex(data)
         if value is not None:
             self._frame_address_high = value
@@ -323,7 +342,6 @@ class Decoder(srd.Decoder):
         return True
 
     def _decode_sender_frame_header_address_low(self, startsample, endsample, data):
-        print("  _decode_sender_frame_header_address_low")
         value = self._decode_hex(data)
         if value is not None:
             frame_address_low = value
@@ -331,7 +349,6 @@ class Decoder(srd.Decoder):
                 frame_address_low & 0xFF
             )
             delattr(self, "_frame_address_high")
-            print("  Address")
             self.put(
                 self._chunk_startsample,
                 endsample,
@@ -346,7 +363,6 @@ class Decoder(srd.Decoder):
         return True
 
     def _decode_sender_frame_data(self, startsample, endsample, data):
-        print("  _decode_sender_frame_data")
         if self._data_count > 0:
             value = self._decode_hex(data)
             if value is not None:
@@ -373,12 +389,10 @@ class Decoder(srd.Decoder):
                 return True
 
     def _decode_sender_frame_checksum(self, startsample, endsample, data):
-        print("  _decode_sender_frame_checksum")
         value = self._decode_hex(data)
         if value is not None:
             self._frame.checksum = value
             self._frame.endsample = endsample
-            print("  Checksum")
             self.put(
                 self._chunk_startsample,
                 self._frame.endsample,
@@ -406,13 +420,11 @@ class Decoder(srd.Decoder):
         return True
 
     def _decode_sender(self, startsample, endsample, data):
-        print(">", hex(data))
 
         if self._sender_decode_function(startsample, endsample, data):
             return
 
         # Warning
-        print("    ?")
         self.put(
             startsample,
             endsample,
