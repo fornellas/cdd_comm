@@ -35,7 +35,7 @@ class Frame:
         ):
             return "color"
         if self.length == 0xA and self.frame_type == 0xF0 and self.address == 0x0:
-            return "calendar-date"
+            return "date"
         if self.length == 0xA and self.frame_type == 0xF4 and self.address == 0x0:
             return "todo-date"
         if self.length == 0x1 and self.frame_type == 0x72 and self.address == 0x0:
@@ -82,6 +82,8 @@ class Frame:
                 return "Reminder Segment Start"
             if self.data == [0xC1, 0x0]:
                 return "To Do Segment Start"
+            if self.data == [0x92, 0x0]:
+                return "Expense Manager Segment Start"
             return "Unknown Data Segment Start"
 
         if type_str == "color":
@@ -92,8 +94,8 @@ class Frame:
             }
             return f"Color: {color_map[self.data[0]]}"
 
-        if type_str == "calendar-date":
-            return "Calendar Date: " + "".join(chr(d) for d in self.data)
+        if type_str == "date":
+            return "Date: " + "".join(chr(d) for d in self.data)
 
         if type_str == "todo-date":
             return "To Do Date: " + "".join(chr(d) for d in self.data)
@@ -185,7 +187,7 @@ class Decoder(srd.Decoder):
         ("frame-checksum", "Frame Checksum"),
         ("frame-type-segment-start", "Segment Start"),
         ("frame-type-color", "Color"),
-        ("frame-type-calendar-date", "Calendar Date"),
+        ("frame-type-date", "Date"),
         ("frame-type-todo-date", "To Do Date"),
         ("frame-type-todo-priority", "To Do Priority"),
         ("frame-type-todo-time", "To Do Time"),
@@ -221,7 +223,7 @@ class Decoder(srd.Decoder):
             (
                 _get_annotation_index(annotations, "frame-type-segment-start"),
                 _get_annotation_index(annotations, "frame-type-color"),
-                _get_annotation_index(annotations, "frame-type-calendar-date"),
+                _get_annotation_index(annotations, "frame-type-date"),
                 _get_annotation_index(annotations, "frame-type-todo-date"),
                 _get_annotation_index(annotations, "frame-type-todo-priority"),
                 _get_annotation_index(annotations, "frame-type-todo-time"),
