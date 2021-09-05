@@ -35,7 +35,15 @@ class Frame:
         ):
             return "color"
         if self.length == 0xA and self.frame_type == 0xF0 and self.address == 0x0:
-            return "date"
+            return "calendar-date"
+        if self.length == 0xA and self.frame_type == 0xF4 and self.address == 0x0:
+            return "todo-date"
+        if self.length == 0x1 and self.frame_type == 0x72 and self.address == 0x0:
+            return "todo-priority"
+        if self.length == 0x5 and self.frame_type == 0xE4 and self.address == 0x0:
+            return "todo-time"
+        if self.length == 0x5 and self.frame_type == 0xC4 and self.address == 0x0:
+            return "todo-alarm"
         if self.length == 0x20 and self.frame_type == 0x78 and self.address == 0x0:
             return "calendar-date-color-highlight"
         if (
@@ -64,14 +72,16 @@ class Frame:
                 return "Telephone Segment Start"
             if self.data == [0xC0, 0x0]:
                 return "Business Card Segment Start"
+            if self.data == [0xA0, 0x0]:
+                return "Memo Segment Start"
             if self.data == [0x80, 0x0]:
                 return "Calendar Segment Start"
             if self.data == [0xB0, 0x0]:
                 return "Schedule Keeper Segment Start"
-            # if self.data == [0xC1, 0x0]:
-            #     return "TO DO Segment Start"
-            # if self.data == [0xA0, 0x0]:
-            #     return "Memo Segment Start"
+            if self.data == [0x91, 0x0]:
+                return "Reminder Segment Start"
+            if self.data == [0xC1, 0x0]:
+                return "To Do Segment Start"
             return "Unknown Data Segment Start"
 
         if type_str == "color":
@@ -82,10 +92,25 @@ class Frame:
             }
             return f"Color: {color_map[self.data[0]]}"
 
-        if type_str == "date":
-            return "Date: " + "".join(
-                chr(d) if chr(d).isprintable() else f"({hex(d)})" for d in self.data
-            )
+        if type_str == "calendar-date":
+            return "Calendar Date: " + "".join(chr(d) for d in self.data)
+
+        if type_str == "todo-date":
+            return "To Do Date: " + "".join(chr(d) for d in self.data)
+
+        if type_str == "todo-priority":
+            priority_map = {
+                0x10: "A: Orange",
+                0x20: "B: Blue",
+                0x30: "C: Green",
+            }
+            return f"To Do Priority: {priority_map[self.data[0]]}"
+
+        if type_str == "todo-time":
+            return "To Do Time: " + "".join(chr(d) for d in self.data)
+
+        if type_str == "todo-alarm":
+            return "To Do Alarm: " + "".join(chr(d) for d in self.data)
 
         if type_str == "calendar-date-color-highlight":
             info_list = []
@@ -160,7 +185,11 @@ class Decoder(srd.Decoder):
         ("frame-checksum", "Frame Checksum"),
         ("frame-type-segment-start", "Segment Start"),
         ("frame-type-color", "Color"),
-        ("frame-type-date", "Date"),
+        ("frame-type-calendar-date", "Calendar Date"),
+        ("frame-type-todo-date", "To Do Date"),
+        ("frame-type-todo-priority", "To Do Priority"),
+        ("frame-type-todo-time", "To Do Time"),
+        ("frame-type-todo-alarm", "To Do Alarm"),
         ("frame-type-calendar-date-color-highlight", "Calendar Date Color / Highlight"),
         ("frame-type-time", "Time"),
         ("frame-type-alarm", "Alarm"),
@@ -192,7 +221,11 @@ class Decoder(srd.Decoder):
             (
                 _get_annotation_index(annotations, "frame-type-segment-start"),
                 _get_annotation_index(annotations, "frame-type-color"),
-                _get_annotation_index(annotations, "frame-type-date"),
+                _get_annotation_index(annotations, "frame-type-calendar-date"),
+                _get_annotation_index(annotations, "frame-type-todo-date"),
+                _get_annotation_index(annotations, "frame-type-todo-priority"),
+                _get_annotation_index(annotations, "frame-type-todo-time"),
+                _get_annotation_index(annotations, "frame-type-todo-alarm"),
                 _get_annotation_index(
                     annotations, "frame-type-calendar-date-color-highlight"
                 ),
