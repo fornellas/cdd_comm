@@ -33,13 +33,23 @@ class Frame:
             and self.address == 0x0
             and self.data[0] in [0x1, 0x2, 0x4]
         ):
-            return "record-color"
-        if self.length == 0xa and self.frame_type == 0xf0 and self.address == 0x0:
-            return "calendar-date"
+            return "color"
+        if self.length == 0xA and self.frame_type == 0xF0 and self.address == 0x0:
+            return "date"
         if self.length == 0x20 and self.frame_type == 0x78 and self.address == 0x0:
             return "calendar-date-color-highlight"
+        if (
+            self.length in [0xB, 0x5]
+            and self.frame_type == 0xE0
+            and self.address == 0x0
+        ):
+            return "time"
+        if self.length == 0x5 and self.frame_type == 0xC0 and self.address == 0x0:
+            return "alarm"
+        if self.length == 0x1 and self.frame_type == 0x21 and self.address == 0x00:
+            return "illustration"
         if self.frame_type == 0x80:
-            return "data"
+            return "text"
         if self.frame_type == 0x0 and self.address == 0x1 and self.length == 0x0:
             return "record-end"
         if self.length == 0 and self.frame_type == 0x0 and self.address == 0xFF:
@@ -56,21 +66,23 @@ class Frame:
                 return "Business Card Segment Start"
             if self.data == [0x80, 0x0]:
                 return "Calendar Segment Start"
-            if self.data == [0xC1, 0x0]:
-                return "TO DO Segment Start"
-            if self.data == [0xA0, 0x0]:
-                return "Memo Segment Start"
+            if self.data == [0xB0, 0x0]:
+                return "Schedule Keeper Segment Start"
+            # if self.data == [0xC1, 0x0]:
+            #     return "TO DO Segment Start"
+            # if self.data == [0xA0, 0x0]:
+            #     return "Memo Segment Start"
             return "Unknown Data Segment Start"
 
-        if type_str == "record-color":
+        if type_str == "color":
             color_map = {
-                0x1: "blue",
-                0x2: "orange",
-                0x4: "green",
+                0x1: "Blue",
+                0x2: "Orange",
+                0x4: "Green",
             }
-            return f"Record Start ({color_map[self.data[0]]})"
+            return f"Color: {color_map[self.data[0]]}"
 
-        if type_str == "calendar-date":
+        if type_str == "date":
             return "Date: " + "".join(
                 chr(d) if chr(d).isprintable() else f"({hex(d)})" for d in self.data
             )
@@ -88,11 +100,19 @@ class Frame:
                 if color_highlight & 0x80:
                     highlight = "*"
                 info_list.append(f"{day+1}{color}{highlight}")
-            info_str = " ".join(info_list)
-            return f"Highlight: {info_str}"
+            return " ".join(info_list)
 
-        if type_str == "data":
-            return "Data: " + "".join(
+        if type_str == "time":
+            return "Time: " + "".join(chr(d) for d in self.data)
+
+        if type_str == "alarm":
+            return "Alarm: " + "".join(chr(d) for d in self.data)
+
+        if type_str == "illustration":
+            return f"Illustration: {self.data[0]}"
+
+        if type_str == "text":
+            return "Text: " + "".join(
                 chr(d) if chr(d).isprintable() else f"({hex(d)})" for d in self.data
             )
 
@@ -138,14 +158,17 @@ class Decoder(srd.Decoder):
         ("frame-header", "Frame Header"),
         ("frame-data", "Frame Data"),
         ("frame-checksum", "Frame Checksum"),
-        ("frame-type-segment-start", "Segment Start Frame"),
-        ("frame-type-record-color", "Record Color"),
-        ("frame-type-calendar-date", "Date"),
+        ("frame-type-segment-start", "Segment Start"),
+        ("frame-type-color", "Color"),
+        ("frame-type-date", "Date"),
         ("frame-type-calendar-date-color-highlight", "Calendar Date Color / Highlight"),
-        ("frame-type-data", "Data Frame"),
-        ("frame-type-record-end", "Record End Frame"),
-        ("frame-type-finish", "Finish Frame"),
-        ("frame-type-unknown", "Unknown Frame"),
+        ("frame-type-time", "Time"),
+        ("frame-type-alarm", "Alarm"),
+        ("frame-type-illustration", "Illustration"),
+        ("frame-type-text", "Text"),
+        ("frame-type-record-end", "Record End"),
+        ("frame-type-finish", "Finish"),
+        ("frame-type-unknown", "Unknown"),
         ("sender-warning", "Sender Warning"),
         ("receiver-ready", "Receiver Ready"),
         ("receiver-ack", "Receiver Ack"),
@@ -168,10 +191,15 @@ class Decoder(srd.Decoder):
             "Frame",
             (
                 _get_annotation_index(annotations, "frame-type-segment-start"),
-                _get_annotation_index(annotations, "frame-type-record-color"),
-                _get_annotation_index(annotations, "frame-type-calendar-date"),
-                _get_annotation_index(annotations, "frame-type-calendar-date-color-highlight"),
-                _get_annotation_index(annotations, "frame-type-data"),
+                _get_annotation_index(annotations, "frame-type-color"),
+                _get_annotation_index(annotations, "frame-type-date"),
+                _get_annotation_index(
+                    annotations, "frame-type-calendar-date-color-highlight"
+                ),
+                _get_annotation_index(annotations, "frame-type-time"),
+                _get_annotation_index(annotations, "frame-type-alarm"),
+                _get_annotation_index(annotations, "frame-type-illustration"),
+                _get_annotation_index(annotations, "frame-type-text"),
                 _get_annotation_index(annotations, "frame-type-record-end"),
                 _get_annotation_index(annotations, "frame-type-finish"),
                 _get_annotation_index(annotations, "frame-type-unknown"),
