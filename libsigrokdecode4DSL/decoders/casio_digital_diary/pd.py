@@ -52,7 +52,10 @@ class Frame:
             return "alarm"
         if self.length == 0x1 and self.type == 0x21 and self.address == 0x0:
             return "illustration"
-        if self.type == 0x80:
+        if (
+            self.type == 0x80  # Text with address < 0x100
+            or self.type == 0x81  # Text with address >= 0x100
+        ):
             return "text"
         if self.length == 0x0 and self.type == 0x0 and self.address == 0x100:
             return "record-end"
