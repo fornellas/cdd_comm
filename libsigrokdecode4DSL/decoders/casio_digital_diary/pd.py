@@ -240,7 +240,7 @@ class Decoder(srd.Decoder):
                                 self.annotations,
                                 f"frame-type-{decoded_frame.get_kebab_case_description()}",
                             ),
-                            [str(decoded_frame)],
+                            [repr(str(decoded_frame))[1:-1]],
                         ],
                     )
                 self._frame_builder = frame.FrameBuilder()
