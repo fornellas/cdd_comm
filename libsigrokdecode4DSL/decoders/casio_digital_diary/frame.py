@@ -2,6 +2,10 @@ from dataclasses import dataclass
 from typing import List, Type, Iterable, ClassVar, Dict, Optional, Tuple
 from abc import ABC, abstractmethod
 
+##
+## Frame
+##
+
 
 @dataclass
 class Frame:
@@ -56,6 +60,9 @@ class Frame:
     @classmethod
     def match(cls, length: int, frame_type: int, address: int, data: List[int]) -> bool:
         return False
+
+
+# Directory
 
 
 class Directory(Frame):
@@ -153,6 +160,9 @@ class ExpenseManagerDirectory(Directory):
         return False
 
 
+# Others
+
+
 class Color(Frame):
     DESCRIPTION: str = "Color"
     _NAMES: Dict[int, str] = {
@@ -160,6 +170,10 @@ class Color(Frame):
         0x2: "Orange",
         0x4: "Green",
     }
+
+    @property
+    def name(self):
+        return self._NAMES[self.data[0]]
 
     @classmethod
     def match(cls, length: int, frame_type: int, address: int, data: List[int]) -> bool:
@@ -173,13 +187,13 @@ class Color(Frame):
         return False
 
     def __str__(self):
-        return f"{self.DESCRIPTION}: {self._NAMES[self.data[0]]}"
+        return f"{self.DESCRIPTION}: {self.name}"
 
 
 class TextDataFrame(Frame, ABC):
     # TODO All other characters from manual
-    _DATA_TO_UNICODE: Dict[int, str] = {
-        10: "",  # End of entry
+    CASIO_TO_UNICODE: Dict[int, str] = {
+        10: chr(0x1F),  # Unit separator
         13: "\n",
         21: "§",
         32: " ",
@@ -353,10 +367,14 @@ class TextDataFrame(Frame, ABC):
         212: "¾",
         159: "f",
         179: "|",
-        216: "₣",  # Fr
+        216: "₣",
         174: "←",
         175: "→",
         251: "√",
+    }
+
+    UNICODE_TO_CASIO: Dict[str, int] = {
+        u: c for c, u in CASIO_TO_UNICODE.items() if u != ""
     }
 
     @classmethod
@@ -365,14 +383,14 @@ class TextDataFrame(Frame, ABC):
         return False
 
     @property
-    def _data_str(self) -> str:
+    def text(self) -> str:
         return "".join(
-            self._DATA_TO_UNICODE[d] if d in self._DATA_TO_UNICODE else f"[{d}]"
+            self.CASIO_TO_UNICODE[d] if d in self.CASIO_TO_UNICODE else f"[{d}]"
             for d in self.data
         )
 
     def __str__(self):
-        return f"{self.DESCRIPTION}: {self._data_str}"
+        return f"{self.DESCRIPTION}: {self.text}"
 
 
 class Date(TextDataFrame):
@@ -504,6 +522,9 @@ class Text(TextDataFrame):
         return False
 
 
+# End
+
+
 class EndOfRecord(Frame):
     DESCRIPTION: str = "End Of Record"
 
@@ -528,6 +549,11 @@ class EndOfTransmission(Frame):
 
     def __str__(self):
         return "End Of Transmission"
+
+
+##
+## Frame Builder
+##
 
 
 class FrameBuilder:

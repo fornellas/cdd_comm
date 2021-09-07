@@ -25,6 +25,7 @@ _ANNOTATIONS = (
     ("frame-data", "Frame Data"),
     ("frame-checksum", "Frame Checksum"),
     *[(f"frame-type-{id_str}", desc) for id_str, desc in _FRAME_TYPE_DESC.items()],
+    ("sender-record", "Record"),
     ("sender-warning", "Sender Warning"),
     ("receiver-ready", "Receiver Ready"),
     ("receiver-ack", "Receiver Ack"),
@@ -77,6 +78,11 @@ class Decoder(srd.Decoder):
                 _get_annotation_index(_ANNOTATIONS, f"frame-type-{id_str}")
                 for id_str in _FRAME_TYPE_DESC.keys()
             ),
+        ),
+        (
+            "record",
+            "Record",
+            (_get_annotation_index(annotations, "sender-record"),),
         ),
         (
             "sender-warning",
@@ -195,8 +201,47 @@ class Decoder(srd.Decoder):
             delattr(self, "_hex_high_value")
             return hex_value
 
+    def _decode_record(self, startsample, endsample, decoded_frame):
+        if self._record_state == "directory_or_record":
+            if isinstance(decoded_frame, frame.Directory):
+                self._record_state = "start"
+                self._record_directory_type = type(decoded_frame)
+                return
+            else:
+                self._record_state = "start"
+        if self._record_state == "start":
+            self._record_startsample = startsample
+            self._record_state = "frames"
+            self._record_frames: List[Frame] = []
+        if self._record_state == "frames":
+            if isinstance(decoded_frame, frame.EndOfRecord):
+                if self._record_directory_type in record.Record.DIRECTORY_TO_RECORD:
+                    record_class = record.Record.DIRECTORY_TO_RECORD[
+                        self._record_directory_type
+                    ]
+                    decoded_record = record_class.from_frames(self._record_frames)
+                    decoded_str = str(decoded_record)
+                else:
+                    decoded_str = "Unknown: " + ", ".join(
+                        str(f) for f in self._record_frames
+                    )
+                self.put(
+                    self._record_startsample,
+                    endsample,
+                    self.out_ann,
+                    [
+                        _get_annotation_index(
+                            self.annotations,
+                            "sender-record",
+                        ),
+                        [decoded_str],
+                    ],
+                )
+                self._record_state = "directory_or_record"
+            else:
+                self._record_frames.append(decoded_frame)
+
     def _decode_sender_frame(self, startsample, endsample, data):
-        # TODO / FIXME
         value = self._decode_hex(data)
         if value is not None:
             (chunk_desc, decoded_frame) = self._frame_builder.add_data(value)
@@ -243,9 +288,9 @@ class Decoder(srd.Decoder):
                             [repr(str(decoded_frame))[1:-1]],
                         ],
                     )
+                self._decode_record(self._frame_startsample, endsample, decoded_frame)
                 self._frame_builder = frame.FrameBuilder()
                 self._sender_decode_function = self._decode_sender_sync_or_frame
-
         else:
             self._chunk_startsample = startsample
         return True
@@ -290,6 +335,7 @@ class Decoder(srd.Decoder):
         """
         self._sender_decode_function = self._decode_sender_sync_or_frame
         self._frame_builder = frame.FrameBuilder()
+        self._record_state = "directory_or_record"
 
     def decode(self, startsample, endsample, data):
         """
