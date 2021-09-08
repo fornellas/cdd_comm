@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from typing import List, Type, Iterable, ClassVar, Dict, Optional, Tuple
 from abc import ABC, abstractmethod
+import datetime
 
 ##
 ## Frame
@@ -395,6 +396,10 @@ class TextDataFrame(Frame, ABC):
 class Date(TextDataFrame):
     DESCRIPTION: str = "Date"
 
+    @property
+    def date(self) -> datetime.date:
+        return datetime.date(*[int(v) for v in self.text.split("-")])
+
     @classmethod
     def match(cls, length: int, frame_type: int, address: int, data: List[int]) -> bool:
         if length == 0xA and frame_type == 0xF0 and address == 0x0:
@@ -478,6 +483,27 @@ class CalendarHighlight(Frame):
 class Time(TextDataFrame):
     DESCRIPTION: str = "Time"
 
+    def _get_start_end_times(self) -> (datetime.time, Optional[datetime.time]):
+        time_str_list = self.text.split("~")
+
+        hour, minute = [int(v) for v in time_str_list[0].split(":")]
+        start_time = datetime.time(hour, minute)
+
+        if len(time_str_list) > 1:
+            hour, minute = [int(v) for v in time_str_list[1].split(":")]
+            end_time = datetime.time(hour, minute)
+        else:
+            end_time = None
+        return (start_time, end_time)
+
+    @property
+    def start_time(self) -> datetime.time:
+        return self._get_start_end_times()[0]
+
+    @property
+    def end_time(self) -> Optional[datetime.time]:
+        return self._get_start_end_times()[1]
+
     @classmethod
     def match(cls, length: int, frame_type: int, address: int, data: List[int]) -> bool:
         if length in [0xB, 0x5] and frame_type == 0xE0 and address == 0x0:
@@ -487,6 +513,11 @@ class Time(TextDataFrame):
 
 class Alarm(TextDataFrame):
     DESCRIPTION: str = "Alarm"
+
+    @property
+    def time(self) -> datetime.time:
+        hour, minute = [int(v) for v in self.text.split(":")]
+        return datetime.time(hour, minute)
 
     @classmethod
     def match(cls, length: int, frame_type: int, address: int, data: List[int]) -> bool:
@@ -498,6 +529,10 @@ class Alarm(TextDataFrame):
 class Illustration(Frame):
     DESCRIPTION: str = "Illustration"
 
+    @property
+    def number(self) -> int:
+        return self.data[0]
+
     @classmethod
     def match(cls, length: int, frame_type: int, address: int, data: List[int]) -> bool:
         if length == 0x1 and frame_type == 0x21 and address == 0x0:
@@ -505,7 +540,7 @@ class Illustration(Frame):
         return False
 
     def __str__(self):
-        return f"Illustration: {self.data[0]}"
+        return f"Illustration: {self.number}"
 
 
 class Text(TextDataFrame):

@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from typing import List, Optional, Dict, ClassVar
 from . import frame
 from dataclasses import dataclass
+import datetime
 
 
 class Record(ABC):
@@ -176,6 +177,101 @@ class Memo(Record):
                 raise ValueError(f"Unknown frame type: {type(f)}")
 
         return cls(color, text)
+
+    def to_frames(self) -> List[frame.Frame]:
+        raise NotImplementedError
+
+
+@dataclass
+class Calendar(Record):
+    color: str
+    text: str
+
+    DIRECTORY: ClassVar[Optional[frame.Directory]] = frame.MemoDirectory
+
+    DESCRIPTION: str = "Memo"
+
+    def __str__(self):
+        return f"Memo: {repr(self.text)}"
+
+    @classmethod
+    def from_frames(cls, frames: List[frame.Frame]) -> "Telephone":
+        text = ""
+        color = "Blue"
+        for f in frames:
+            if isinstance(f, frame.Color):
+                color = f.name
+            elif isinstance(f, frame.Text):
+                text += str(f.text)
+            else:
+                raise ValueError(f"Unknown frame type: {type(f)}")
+
+        return cls(color, text)
+
+    def to_frames(self) -> List[frame.Frame]:
+        raise NotImplementedError
+
+
+@dataclass
+class ScheduleKeeper(Record):
+    color: str
+    date: datetime.date
+    start_time: Optional[datetime.time]
+    end_time: Optional[datetime.time]
+    alarm_time: Optional[datetime.time]
+    illustration: Optional[int]
+    description: Optional[str]
+
+    DIRECTORY: ClassVar[Optional[frame.Directory]] = frame.ScheduleKeeperDirectory
+
+    DESCRIPTION: str = "Schedule Keeper"
+
+    def __str__(self):
+        return f"Schedule Keeper: {self.date}, {self.start_time}, {self.end_time}, {self.alarm_time}, {self.illustration}, {self.description} ({self.color})"
+
+    @classmethod
+    def from_frames(cls, frames: List[frame.Frame]) -> "Telephone":
+        color: str = "Blue"
+        date: datetime.date = None
+        start_time: datetime.time = None
+        end_time: datetime.time = None
+        alarm_time: datetime.time = None
+        illustration: int = None
+        description: Optional[str] = None
+
+        for f in frames:
+            if isinstance(f, frame.Color):
+                color = f.name
+            elif isinstance(f, frame.Date):
+                date = f.date
+            elif isinstance(f, frame.Time):
+                start_time = f.start_time
+                end_time = f.end_time
+            elif isinstance(f, frame.Alarm):
+                alarm_time = f.time
+            elif isinstance(f, frame.Illustration):
+                illustration = f.number
+            elif isinstance(f, frame.Text):
+                if description is None:
+                    description = ""
+                description += str(f.text)
+            else:
+                raise ValueError(f"Unknown frame type: {type(f)}")
+
+        if not date:
+            raise ValueError("Missing date")
+        if not start_time and not description:
+            raise ValueError("Missing either start_time or description")
+
+        return cls(
+            color,
+            date,
+            start_time,
+            end_time,
+            alarm_time,
+            illustration,
+            description,
+        )
 
     def to_frames(self) -> List[frame.Frame]:
         raise NotImplementedError

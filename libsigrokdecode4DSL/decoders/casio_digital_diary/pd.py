@@ -235,7 +235,7 @@ class Decoder(srd.Decoder):
                         f"sender-record-{type(decoded_record).__name__.lower()}"
                     )
                 else:
-                    decoded_str = "Unknown: " + ", ".join(
+                    decoded_str = "Unknown Record: " + ", ".join(
                         str(f) for f in self._record_frames
                     )
                     annotation = "sender-record-unknown"
