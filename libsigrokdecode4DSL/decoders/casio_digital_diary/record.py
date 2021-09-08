@@ -143,3 +143,31 @@ class BusinessCard(Record):
 
     def to_frames(self) -> List[frame.Frame]:
         raise NotImplementedError
+
+
+@dataclass
+class Memo(Record):
+    color: str
+    text: str
+
+    DIRECTORY: ClassVar[Optional[frame.Directory]] = frame.MemoDirectory
+
+    def __str__(self):
+        return f"Memo: {repr(self.text)})"
+
+    @classmethod
+    def from_frames(cls, frames: List[frame.Frame]) -> "Telephone":
+        text = ""
+        color = "Blue"
+        for f in frames:
+            if isinstance(f, frame.Color):
+                color = f.name
+            elif isinstance(f, frame.Text):
+                text += str(f.text)
+            else:
+                raise ValueError(f"Unknown frame type: {type(f)}")
+
+        return cls(color, text)
+
+    def to_frames(self) -> List[frame.Frame]:
+        raise NotImplementedError
