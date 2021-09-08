@@ -35,7 +35,7 @@ class Telephone(Record):
     DIRECTORY: ClassVar[Optional[frame.Directory]] = frame.TelephoneDirectory
 
     def __str__(self):
-        return f"Telephone: {self.name}, {self.number}, {self.address}, {self.memo} ({self.color})"
+        return f"Telephone: {repr(self.name)}, {repr(self.number)}, {repr(self.address)}, {repr(self.memo)} ({self.color})"
 
     @classmethod
     def from_frames(cls, frames: List[frame.Frame]) -> "Telephone":
@@ -84,7 +84,7 @@ class BusinessCard(Record):
     DIRECTORY: ClassVar[Optional[frame.Directory]] = frame.BusinessCardDirectory
 
     def __str__(self):
-        return f"Business Card: {self.employer}, {self.name}, {self.telephone_number}, {self.telex_number}, {self.fax_number}, {self.position}, {self.department}, {self.po_box}, {self.address}, {self.memo} ({self.color})"
+        return f"Business Card: {repr(self.employer)}, {repr(self.name)}, {repr(self.telephone_number)}, {repr(self.telex_number)}, {repr(self.fax_number)}, {repr(self.position)}, {repr(self.department)}, {repr(self.po_box)}, {repr(self.address)}, {repr(self.memo)} ({self.color})"
 
     @classmethod
     def from_frames(cls, frames: List[frame.Frame]) -> "Telephone":
