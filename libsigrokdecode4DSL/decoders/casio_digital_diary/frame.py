@@ -191,7 +191,6 @@ class Color(Frame):
 
 
 class TextDataFrame(Frame, ABC):
-    # TODO All other characters from manual
     CASIO_TO_UNICODE: Dict[int, str] = {
         10: chr(0x1F),  # Unit separator
         13: "\n",
