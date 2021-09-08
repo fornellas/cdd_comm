@@ -6,6 +6,8 @@ from dataclasses import dataclass
 
 class Record(ABC):
 
+    DESCRIPTION: str = "Record"
+
     DIRECTORY: ClassVar[Optional[frame.Directory]] = None
 
     DIRECTORY_TO_RECORD: Dict[frame.Directory, "Record"] = {}
@@ -33,6 +35,8 @@ class Telephone(Record):
     memo: Optional[str]
 
     DIRECTORY: ClassVar[Optional[frame.Directory]] = frame.TelephoneDirectory
+
+    DESCRIPTION: str = "Telephone"
 
     def __str__(self):
         return f"Telephone: {repr(self.name)}, {repr(self.number)}, {repr(self.address)}, {repr(self.memo)} ({self.color})"
@@ -82,6 +86,8 @@ class BusinessCard(Record):
     memo: Optional[str]
 
     DIRECTORY: ClassVar[Optional[frame.Directory]] = frame.BusinessCardDirectory
+
+    DESCRIPTION: str = "Business Card"
 
     def __str__(self):
         return f"Business Card: {repr(self.employer)}, {repr(self.name)}, {repr(self.telephone_number)}, {repr(self.telex_number)}, {repr(self.fax_number)}, {repr(self.position)}, {repr(self.department)}, {repr(self.po_box)}, {repr(self.address)}, {repr(self.memo)} ({self.color})"
@@ -152,8 +158,10 @@ class Memo(Record):
 
     DIRECTORY: ClassVar[Optional[frame.Directory]] = frame.MemoDirectory
 
+    DESCRIPTION: str = "Memo"
+
     def __str__(self):
-        return f"Memo: {repr(self.text)})"
+        return f"Memo: {repr(self.text)}"
 
     @classmethod
     def from_frames(cls, frames: List[frame.Frame]) -> "Telephone":

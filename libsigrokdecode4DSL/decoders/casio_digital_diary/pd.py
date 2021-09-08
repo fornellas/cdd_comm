@@ -25,7 +25,11 @@ _ANNOTATIONS = (
     ("frame-data", "Frame Data"),
     ("frame-checksum", "Frame Checksum"),
     *[(f"frame-type-{id_str}", desc) for id_str, desc in _FRAME_TYPE_DESC.items()],
-    ("sender-record", "Record"),
+    *[
+        (f"sender-record-{record_class.__name__.lower()}", record_class.DESCRIPTION)
+        for record_class in record.Record.DIRECTORY_TO_RECORD.values()
+    ],
+    ("sender-record-unknown", "Unknown Record"),
     ("sender-warning", "Sender Warning"),
     ("receiver-ready", "Receiver Ready"),
     ("receiver-ack", "Receiver Ack"),
@@ -82,7 +86,13 @@ class Decoder(srd.Decoder):
         (
             "record",
             "Record",
-            (_get_annotation_index(annotations, "sender-record"),),
+            tuple(
+                _get_annotation_index(
+                    _ANNOTATIONS, f"sender-record-{record_class.__name__.lower()}"
+                )
+                for record_class in record.Record.DIRECTORY_TO_RECORD.values()
+            )
+            + (_get_annotation_index(_ANNOTATIONS, "sender-record-unknown"),),
         ),
         (
             "sender-warning",
@@ -221,10 +231,14 @@ class Decoder(srd.Decoder):
                     ]
                     decoded_record = record_class.from_frames(self._record_frames)
                     decoded_str = str(decoded_record)
+                    annotation = (
+                        f"sender-record-{type(decoded_record).__name__.lower()}"
+                    )
                 else:
                     decoded_str = "Unknown: " + ", ".join(
                         str(f) for f in self._record_frames
                     )
+                    annotation = "sender-record-unknown"
                 self.put(
                     self._record_startsample,
                     endsample,
@@ -232,7 +246,7 @@ class Decoder(srd.Decoder):
                     [
                         _get_annotation_index(
                             self.annotations,
-                            "sender-record",
+                            annotation,
                         ),
                         [decoded_str],
                     ],
