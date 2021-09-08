@@ -461,15 +461,15 @@ class CalendarHighlight(Frame):
 
     def __str__(self):
         info_list = []
-        for day, color_highlight in enumerate(reversed(self.data)):
-            if color_highlight & 0x1:
+        for day, info in enumerate(reversed(self.data)):
+            if info & 0x1:
                 color = "b"
-            if color_highlight & 0x4:
+            if info & 0x4:
                 color = "g"
-            if color_highlight & 0x2:
+            if info & 0x2:
                 color = "o"
             highlight = ""
-            if color_highlight & 0x80:
+            if info & 0x80:
                 highlight = "*"
             info_list.append(f"{day+1}{color}{highlight}")
         return f"{self.DESCRIPTION}: " + " ".join(info_list)
