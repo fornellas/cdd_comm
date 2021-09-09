@@ -1,6 +1,6 @@
 import sigrokdecode as srd
 from dataclasses import dataclass
-from typing import List, Dict
+from typing import List, Dict, Optional
 from . import frame
 from . import record
 import re
@@ -116,13 +116,17 @@ class Decoder(srd.Decoder):
     binary = tuple()
     tags = ["PC"]
 
+    _record_state: str
+    _frame_builder: frame.FrameBuilder
+    _chunk_startsample: int
+
     ##
     ## Private
     ##
 
     # Receiver
 
-    def _decode_receiver(self, startsample, endsample, data):
+    def _decode_receiver(self, startsample: int, endsample: int, data) -> None:
         if data == 0x11:
             self.put(
                 startsample,
@@ -159,7 +163,9 @@ class Decoder(srd.Decoder):
 
     # Sender
 
-    def _decode_sender_sync_or_frame(self, startsample, endsample, data):
+    def _decode_sender_sync_or_frame(
+        self, startsample: int, endsample: int, data
+    ) -> bool:
         # Sync 1/2
         if data == ord("\r"):
             self.put(
@@ -187,8 +193,9 @@ class Decoder(srd.Decoder):
             )
             self._sender_decode_function = self._decode_sender_frame
             return True
+        return False
 
-    def _decode_sender_sync(self, startsample, endsample, data):
+    def _decode_sender_sync(self, startsample: int, endsample: int, data) -> bool:
         if data is ord("\n"):
             self.put(
                 startsample,
@@ -201,17 +208,18 @@ class Decoder(srd.Decoder):
             )
             self._sender_decode_function = self._decode_sender_sync_or_frame
             return True
+        return False
 
-    def _decode_hex(self, data):
+    def _decode_hex(self, data) -> Optional[int]:
         if not hasattr(self, "_hex_high_value"):
             self._hex_high_value = chr(data)
-            return
+            return None
         else:
             hex_value = int(self._hex_high_value + chr(data), 16)
             delattr(self, "_hex_high_value")
             return hex_value
 
-    def _decode_record(self, startsample, endsample, decoded_frame):
+    def _decode_record(self, startsample: int, endsample: int, decoded_frame) -> None:
         if self._record_state == "directory_or_record":
             if isinstance(decoded_frame, frame.Directory):
                 self._record_state = "start"
@@ -222,7 +230,7 @@ class Decoder(srd.Decoder):
         if self._record_state == "start":
             self._record_startsample = startsample
             self._record_state = "frames"
-            self._record_frames: List[Frame] = []
+            self._record_frames: List[frame.Frame] = []
         if self._record_state == "frames":
             if isinstance(decoded_frame, frame.EndOfRecord):
                 if self._record_directory_type in record.Record.DIRECTORY_TO_RECORD:
@@ -255,7 +263,7 @@ class Decoder(srd.Decoder):
             else:
                 self._record_frames.append(decoded_frame)
 
-    def _decode_sender_frame(self, startsample, endsample, data):
+    def _decode_sender_frame(self, startsample: int, endsample: int, data) -> bool:
         value = self._decode_hex(data)
         if value is not None:
             (chunk_desc, decoded_frame) = self._frame_builder.add_data(value)
@@ -309,7 +317,7 @@ class Decoder(srd.Decoder):
             self._chunk_startsample = startsample
         return True
 
-    def _decode_sender(self, startsample, endsample, data):
+    def _decode_sender(self, startsample: int, endsample: int, data) -> None:
 
         if self._sender_decode_function(startsample, endsample, data):
             return
@@ -330,10 +338,10 @@ class Decoder(srd.Decoder):
     ## Public
     ##
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.reset()
 
-    def start(self):
+    def start(self) -> None:
         """
         This function is called before the beginning of the decoding. This is the
         place to register() the output types, check the user-supplied PD options for
@@ -351,7 +359,7 @@ class Decoder(srd.Decoder):
         self._frame_builder = frame.FrameBuilder()
         self._record_state = "directory_or_record"
 
-    def decode(self, startsample, endsample, data):
+    def decode(self, startsample: int, endsample: int, data) -> None:
         """
         In stacked decoders, this is a function that is called by the
         libsigrokdecode backend whenever it has a chunk of data for the protocol

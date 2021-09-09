@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import List, Optional, Dict, ClassVar, Set
+from typing import List, Optional, Dict, ClassVar, Set, Type
 from . import frame
 from dataclasses import dataclass
 import datetime
@@ -9,9 +9,9 @@ class Record(ABC):
 
     DESCRIPTION: str = "Record"
 
-    DIRECTORY: ClassVar[Optional[frame.Directory]] = None
+    DIRECTORY: ClassVar[Optional[Type[frame.Directory]]] = None
 
-    DIRECTORY_TO_RECORD: Dict[frame.Directory, "Record"] = {}
+    DIRECTORY_TO_RECORD: Dict[Type[frame.Directory], "Record"] = {}
 
     def __init_subclass__(cls, *args, **kwargs):
         super().__init_subclass__(*args, **kwargs)
@@ -35,7 +35,7 @@ class Telephone(Record):
     address: Optional[str]
     memo: Optional[str]
 
-    DIRECTORY: ClassVar[Optional[frame.Directory]] = frame.TelephoneDirectory
+    DIRECTORY: ClassVar[Optional[Type[frame.Directory]]] = frame.TelephoneDirectory
 
     DESCRIPTION: str = "Telephone"
 
@@ -53,10 +53,14 @@ class Telephone(Record):
                 text += str(f.text)
             else:
                 raise ValueError(f"Unknown frame type: {type(f)}")
-        fields: List[str] = [None if v == "" else v for v in text.split(chr(0x1F))]
+        fields: List[Optional[str]] = [
+            None if v == "" else v for v in text.split(chr(0x1F))
+        ]
         if not len(fields):
             raise ValueError("Missing name text frame")
         name = fields[0]
+        if name is None:
+            raise ValueError("Missing name text field")
         number = None
         if len(fields) > 1:
             number = fields[1]
@@ -66,6 +70,7 @@ class Telephone(Record):
         memo = None
         if len(fields) > 3:
             memo = fields[3]
+
         return cls(color, name, number, address, memo)
 
     def to_frames(self) -> List[frame.Frame]:
@@ -86,7 +91,7 @@ class BusinessCard(Record):
     address: Optional[str]
     memo: Optional[str]
 
-    DIRECTORY: ClassVar[Optional[frame.Directory]] = frame.BusinessCardDirectory
+    DIRECTORY: ClassVar[Optional[Type[frame.Directory]]] = frame.BusinessCardDirectory
 
     DESCRIPTION: str = "Business Card"
 
@@ -104,11 +109,17 @@ class BusinessCard(Record):
                 text += str(f.text)
             else:
                 raise ValueError(f"Unknown frame type: {type(f)}")
-        fields: List[str] = [None if v == "" else v for v in text.split(chr(0x1F))]
+        fields: List[Optional[str]] = [
+            None if v == "" else v for v in text.split(chr(0x1F))
+        ]
         if len(fields) < 2:
             raise ValueError("Missing name and / or employer text frame")
         employer = fields[0]
+        if employer is None:
+            raise ValueError("Missing employer")
         name = fields[1]
+        if name is None:
+            raise ValueError("Missing name")
         telephone_number = None
         if len(fields) > 2:
             telephone_number = fields[2]
@@ -157,7 +168,7 @@ class Memo(Record):
     color: str
     text: str
 
-    DIRECTORY: ClassVar[Optional[frame.Directory]] = frame.MemoDirectory
+    DIRECTORY: ClassVar[Optional[Type[frame.Directory]]] = frame.MemoDirectory
 
     DESCRIPTION: str = "Memo"
 
@@ -189,7 +200,7 @@ class Calendar(Record):
     highlighted_dates: Set[int]
     date_colors: List[str]
 
-    DIRECTORY: ClassVar[Optional[frame.Directory]] = frame.CalendarDirectory
+    DIRECTORY: ClassVar[Optional[Type[frame.Directory]]] = frame.CalendarDirectory
 
     DESCRIPTION: str = "Calendar"
 
@@ -240,7 +251,7 @@ class ScheduleKeeper(Record):
     illustration: Optional[int]
     description: Optional[str]
 
-    DIRECTORY: ClassVar[Optional[frame.Directory]] = frame.ScheduleKeeperDirectory
+    DIRECTORY: ClassVar[Optional[Type[frame.Directory]]] = frame.ScheduleKeeperDirectory
 
     DESCRIPTION: str = "Schedule Keeper"
 
@@ -250,11 +261,11 @@ class ScheduleKeeper(Record):
     @classmethod
     def from_frames(cls, frames: List[frame.Frame]) -> "ScheduleKeeper":
         color: str = "Blue"
-        date: datetime.date = None
-        start_time: datetime.time = None
-        end_time: datetime.time = None
-        alarm_time: datetime.time = None
-        illustration: int = None
+        date: Optional[datetime.date] = None
+        start_time: Optional[datetime.time] = None
+        end_time: Optional[datetime.time] = None
+        alarm_time: Optional[datetime.time] = None
+        illustration: Optional[int] = None
         description: Optional[str] = None
 
         for f in frames:

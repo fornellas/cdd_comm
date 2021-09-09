@@ -68,7 +68,7 @@ class Frame:
 
 class Directory(Frame):
 
-    DESCRIPTION: str = "Directory"
+    DESCRIPTION: ClassVar[str] = "Directory"
 
     @classmethod
     def match(cls, length: int, frame_type: int, address: int, data: List[int]) -> bool:
@@ -82,7 +82,7 @@ class Directory(Frame):
 
 
 class TelephoneDirectory(Directory):
-    DESCRIPTION: str = "Telephone Directory"
+    DESCRIPTION: ClassVar[str] = "Telephone Directory"
 
     @classmethod
     def match(cls, length: int, frame_type: int, address: int, data: List[int]) -> bool:
@@ -92,7 +92,7 @@ class TelephoneDirectory(Directory):
 
 
 class BusinessCardDirectory(Directory):
-    DESCRIPTION: str = "Business Card Directory"
+    DESCRIPTION: ClassVar[str] = "Business Card Directory"
 
     @classmethod
     def match(cls, length: int, frame_type: int, address: int, data: List[int]) -> bool:
@@ -102,7 +102,7 @@ class BusinessCardDirectory(Directory):
 
 
 class MemoDirectory(Directory):
-    DESCRIPTION: str = "Memo Directory"
+    DESCRIPTION: ClassVar[str] = "Memo Directory"
 
     @classmethod
     def match(cls, length: int, frame_type: int, address: int, data: List[int]) -> bool:
@@ -112,7 +112,7 @@ class MemoDirectory(Directory):
 
 
 class CalendarDirectory(Directory):
-    DESCRIPTION: str = "Calendar Directory"
+    DESCRIPTION: ClassVar[str] = "Calendar Directory"
 
     @classmethod
     def match(cls, length: int, frame_type: int, address: int, data: List[int]) -> bool:
@@ -122,7 +122,7 @@ class CalendarDirectory(Directory):
 
 
 class ScheduleKeeperDirectory(Directory):
-    DESCRIPTION: str = "Schedule Keeper Directory"
+    DESCRIPTION: ClassVar[str] = "Schedule Keeper Directory"
 
     @classmethod
     def match(cls, length: int, frame_type: int, address: int, data: List[int]) -> bool:
@@ -132,7 +132,7 @@ class ScheduleKeeperDirectory(Directory):
 
 
 class ReminderDirectory(Directory):
-    DESCRIPTION: str = "Reminder Directory"
+    DESCRIPTION: ClassVar[str] = "Reminder Directory"
 
     @classmethod
     def match(cls, length: int, frame_type: int, address: int, data: List[int]) -> bool:
@@ -142,7 +142,7 @@ class ReminderDirectory(Directory):
 
 
 class ToDoDirectory(Directory):
-    DESCRIPTION: str = "To Do Directory"
+    DESCRIPTION: ClassVar[str] = "To Do Directory"
 
     @classmethod
     def match(cls, length: int, frame_type: int, address: int, data: List[int]) -> bool:
@@ -152,7 +152,7 @@ class ToDoDirectory(Directory):
 
 
 class ExpenseManagerDirectory(Directory):
-    DESCRIPTION: str = "Expense Manager Directory"
+    DESCRIPTION: ClassVar[str] = "Expense Manager Directory"
 
     @classmethod
     def match(cls, length: int, frame_type: int, address: int, data: List[int]) -> bool:
@@ -165,7 +165,7 @@ class ExpenseManagerDirectory(Directory):
 
 
 class Color(Frame):
-    DESCRIPTION: str = "Color"
+    DESCRIPTION: ClassVar[str] = "Color"
     _NAMES: Dict[int, str] = {
         0x1: "Blue",
         0x2: "Orange",
@@ -394,7 +394,7 @@ class TextDataFrame(Frame, ABC):
 
 
 class Date(TextDataFrame):
-    DESCRIPTION: str = "Date"
+    DESCRIPTION: ClassVar[str] = "Date"
 
     @property
     def date(self) -> datetime.date:
@@ -408,7 +408,7 @@ class Date(TextDataFrame):
 
 
 class ToDoDate(TextDataFrame):
-    DESCRIPTION: str = "To Do Date"
+    DESCRIPTION: ClassVar[str] = "To Do Date"
 
     @classmethod
     def match(cls, length: int, frame_type: int, address: int, data: List[int]) -> bool:
@@ -418,7 +418,7 @@ class ToDoDate(TextDataFrame):
 
 
 class DoDoPriority(Frame):
-    DESCRIPTION: str = "To Do Priority"
+    DESCRIPTION: ClassVar[str] = "To Do Priority"
     _NAME: Dict[int, str] = {
         0x10: "A: Orange",
         0x20: "B: Blue",
@@ -436,7 +436,7 @@ class DoDoPriority(Frame):
 
 
 class ToDoTime(TextDataFrame):
-    DESCRIPTION: str = "To Do Time"
+    DESCRIPTION: ClassVar[str] = "To Do Time"
 
     @classmethod
     def match(cls, length: int, frame_type: int, address: int, data: List[int]) -> bool:
@@ -446,7 +446,7 @@ class ToDoTime(TextDataFrame):
 
 
 class ToDoAlarm(TextDataFrame):
-    DESCRIPTION: str = "To Do Alarm"
+    DESCRIPTION: ClassVar[str] = "To Do Alarm"
 
     @classmethod
     def match(cls, length: int, frame_type: int, address: int, data: List[int]) -> bool:
@@ -456,7 +456,7 @@ class ToDoAlarm(TextDataFrame):
 
 
 class DatesHighlight(Frame):
-    DESCRIPTION: str = "Dates Highlight"
+    DESCRIPTION: ClassVar[str] = "Dates Highlight"
 
     @classmethod
     def match(cls, length: int, frame_type: int, address: int, data: List[int]) -> bool:
@@ -480,7 +480,7 @@ class DatesHighlight(Frame):
 
 
 class DateColorHighlight(Frame):
-    DESCRIPTION: str = "Date Color & Highlight"
+    DESCRIPTION: ClassVar[str] = "Date Color & Highlight"
 
     @classmethod
     def match(cls, length: int, frame_type: int, address: int, data: List[int]) -> bool:
@@ -491,16 +491,17 @@ class DateColorHighlight(Frame):
     def _get_date_color_highlight(self) -> List[Tuple[str, bool]]:
         color_highlight: List[Tuple[str, bool]] = []
         for info in reversed(self.data):
+            color: str
             if info & 0x1:
                 color = "Blue"
             if info & 0x4:
                 color = "Green"
             if info & 0x2:
                 color = "Orange"
-            highlight = False
+            highlight: bool = False
             if info & 0x80:
                 highlight = True
-            color_highlight.append(tuple([color, highlight]))
+            color_highlight.append((color, highlight))
         return color_highlight
 
     @property
@@ -517,7 +518,7 @@ class DateColorHighlight(Frame):
 
     @property
     def date_colors(self) -> List[str]:
-        date_colors: List[int] = []
+        date_colors: List[str] = []
         for idx, value in enumerate(self._get_date_color_highlight()):
             color, _highlight = value
             date = idx + 1
@@ -538,13 +539,14 @@ class DateColorHighlight(Frame):
 
 
 class Time(TextDataFrame):
-    DESCRIPTION: str = "Time"
+    DESCRIPTION: ClassVar[str] = "Time"
 
-    def _get_start_end_times(self) -> (datetime.time, Optional[datetime.time]):
+    def _get_start_end_times(self) -> Tuple[datetime.time, Optional[datetime.time]]:
         time_str_list = self.text.split("~")
 
         hour, minute = [int(v) for v in time_str_list[0].split(":")]
         start_time = datetime.time(hour, minute)
+        end_time: Optional[datetime.time]
 
         if len(time_str_list) > 1:
             hour, minute = [int(v) for v in time_str_list[1].split(":")]
@@ -569,7 +571,7 @@ class Time(TextDataFrame):
 
 
 class Alarm(TextDataFrame):
-    DESCRIPTION: str = "Alarm"
+    DESCRIPTION: ClassVar[str] = "Alarm"
 
     @property
     def time(self) -> datetime.time:
@@ -584,7 +586,7 @@ class Alarm(TextDataFrame):
 
 
 class Illustration(Frame):
-    DESCRIPTION: str = "Illustration"
+    DESCRIPTION: ClassVar[str] = "Illustration"
 
     @property
     def number(self) -> int:
@@ -601,7 +603,7 @@ class Illustration(Frame):
 
 
 class Text(TextDataFrame):
-    DESCRIPTION: str = "Text"
+    DESCRIPTION: ClassVar[str] = "Text"
 
     @classmethod
     def match(cls, length: int, frame_type: int, address: int, data: List[int]) -> bool:
@@ -617,7 +619,7 @@ class Text(TextDataFrame):
 
 
 class EndOfRecord(Frame):
-    DESCRIPTION: str = "End Of Record"
+    DESCRIPTION: ClassVar[str] = "End Of Record"
 
     @classmethod
     def match(cls, length: int, frame_type: int, address: int, data: List[int]) -> bool:
@@ -630,7 +632,7 @@ class EndOfRecord(Frame):
 
 
 class EndOfTransmission(Frame):
-    DESCRIPTION: str = "End Of Transmission"
+    DESCRIPTION: ClassVar[str] = "End Of Transmission"
 
     @classmethod
     def match(cls, length: int, frame_type: int, address: int, data: List[int]) -> bool:
@@ -684,6 +686,8 @@ class FrameBuilder:
             self._data_count -= 1
             return ("Data", None)
         self.checksum = data
+        if self.address is None:
+            raise ValueError("Missing address")
         return (
             "Checksum",
             Frame.from_data(
