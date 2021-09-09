@@ -1,7 +1,7 @@
-from dataclasses import dataclass
 from typing import List, Type, Iterable, ClassVar, Dict, Optional, Tuple, Set
 from abc import ABC, abstractmethod
 import datetime
+from dataclasses import dataclass
 
 ##
 ## Frame
@@ -28,7 +28,7 @@ class Frame:
         super().__init_subclass__(*args, **kwargs)
         cls.SUBCLASSES.append(cls)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"Frame: " + "".join(
             chr(d) if chr(d).isprintable() else f"[{hex(d)}]" for d in self.data
         )
@@ -77,8 +77,8 @@ class Directory(Frame):
         else:
             return False
 
-    def __str__(self):
-        return f"{self.DESCRIPTION} Start"
+    def __str__(self) -> str:
+        return f"{self.DESCRIPTION}"
 
 
 class TelephoneDirectory(Directory):
@@ -187,7 +187,7 @@ class Color(Frame):
             return True
         return False
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.DESCRIPTION}: {self.name}"
 
 
@@ -389,16 +389,59 @@ class TextDataFrame(Frame, ABC):
             for d in self.data
         )
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.DESCRIPTION}: {self.text}"
 
 
 class Date(TextDataFrame):
     DESCRIPTION: ClassVar[str] = "Date"
 
+    def _get_date(self) -> Tuple[Optional[int], Optional[int], Optional[int]]:
+        year: Optional[int]
+        month: Optional[int]
+        day: Optional[int]
+        if self.text[0] != "-":
+            year_str = self.text[0:4]
+            year = int(year_str)
+        else:
+            year = None
+        if self.text[5] != "-":
+            month_str = self.text[5:7]
+            month = int(month_str)
+        else:
+            month = None
+        if self.text[8] != "-":
+            day_str = self.text[8:10]
+            day = int(day_str)
+        else:
+            day = None
+        return (year, month, day)
+
+    @property
+    def year(self) -> Optional[int]:
+        year, month, day = self._get_date()
+        return year
+
+    @property
+    def month(self) -> Optional[int]:
+        year, month, day = self._get_date()
+        return month
+
+    @property
+    def day(self) -> Optional[int]:
+        year, month, day = self._get_date()
+        return day
+
     @property
     def date(self) -> datetime.date:
-        return datetime.date(*[int(v) for v in self.text.split("-")])
+        year, month, day = self._get_date()
+        if year is None:
+            raise RuntimeError("Missing year")
+        if month is None:
+            raise RuntimeError("Missing month")
+        if day is None:
+            raise RuntimeError("Missing day")
+        return datetime.date(year, month, day)
 
     @classmethod
     def match(cls, length: int, frame_type: int, address: int, data: List[int]) -> bool:
@@ -431,7 +474,7 @@ class DoDoPriority(Frame):
             return True
         return False
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.DESCRIPTION}: {self._NAME[self.data[0]]}"
 
 
@@ -473,7 +516,7 @@ class DatesHighlight(Frame):
                     dates.append((3 - idx) * 8 + bit + 1)
         return set(dates)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.DESCRIPTION}: " + " ".join(
             str(day) for day in sorted(self.dates)
         )
@@ -527,7 +570,7 @@ class DateColorHighlight(Frame):
             date_colors.append(color)
         return date_colors
 
-    def __str__(self):
+    def __str__(self) -> str:
         info_list = []
         for idx, value in enumerate(self._get_date_color_highlight()):
             color, highlight = value
@@ -598,7 +641,7 @@ class Illustration(Frame):
             return True
         return False
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"Illustration: {self.number}"
 
 
@@ -627,7 +670,7 @@ class EndOfRecord(Frame):
             return True
         return False
 
-    def __str__(self):
+    def __str__(self) -> str:
         return "End"
 
 
@@ -640,7 +683,7 @@ class EndOfTransmission(Frame):
             return True
         return False
 
-    def __str__(self):
+    def __str__(self) -> str:
         return "End Of Transmission"
 
 

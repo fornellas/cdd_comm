@@ -39,7 +39,7 @@ class Telephone(Record):
 
     DESCRIPTION: str = "Telephone"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"Telephone: {repr(self.name)}, {repr(self.number)}, {repr(self.address)}, {repr(self.memo)} ({self.color})"
 
     @classmethod
@@ -50,7 +50,7 @@ class Telephone(Record):
             if isinstance(f, frame.Color):
                 color = f.name
             elif isinstance(f, frame.Text):
-                text += str(f.text)
+                text += f.text
             else:
                 raise ValueError(f"Unknown frame type: {type(f)}")
         fields: List[Optional[str]] = [
@@ -95,7 +95,7 @@ class BusinessCard(Record):
 
     DESCRIPTION: str = "Business Card"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"Business Card: {repr(self.employer)}, {repr(self.name)}, {repr(self.telephone_number)}, {repr(self.telex_number)}, {repr(self.fax_number)}, {repr(self.position)}, {repr(self.department)}, {repr(self.po_box)}, {repr(self.address)}, {repr(self.memo)} ({self.color})"
 
     @classmethod
@@ -106,7 +106,7 @@ class BusinessCard(Record):
             if isinstance(f, frame.Color):
                 color = f.name
             elif isinstance(f, frame.Text):
-                text += str(f.text)
+                text += f.text
             else:
                 raise ValueError(f"Unknown frame type: {type(f)}")
         fields: List[Optional[str]] = [
@@ -172,7 +172,7 @@ class Memo(Record):
 
     DESCRIPTION: str = "Memo"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"Memo: {repr(self.text)}"
 
     @classmethod
@@ -183,7 +183,7 @@ class Memo(Record):
             if isinstance(f, frame.Color):
                 color = f.name
             elif isinstance(f, frame.Text):
-                text += str(f.text)
+                text += f.text
             else:
                 raise ValueError(f"Unknown frame type: {type(f)}")
 
@@ -204,7 +204,7 @@ class Calendar(Record):
 
     DESCRIPTION: str = "Calendar"
 
-    def __str__(self):
+    def __str__(self) -> str:
         info_list = []
         for date in range(1, 32):
             color = self.date_colors[date - 1][0].lower()
@@ -220,8 +220,12 @@ class Calendar(Record):
         date_colors: List[str] = []
         for f in frames:
             if isinstance(f, frame.Date):
-                year = f.date.year
-                month = f.date.month
+                if f.year is None:
+                    raise ValueError("Missing year")
+                year = f.year
+                if f.month is None:
+                    raise ValueError("Missing month")
+                month = f.month
             elif isinstance(f, frame.DatesHighlight):
                 for date in f.dates:
                     highlighted_dates.add(date)
@@ -255,7 +259,7 @@ class ScheduleKeeper(Record):
 
     DESCRIPTION: str = "Schedule Keeper"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"Schedule Keeper: {self.date}, {self.start_time}, {self.end_time}, {self.alarm_time}, {self.illustration}, {self.description} ({self.color})"
 
     @classmethod
@@ -301,6 +305,72 @@ class ScheduleKeeper(Record):
             illustration,
             description,
         )
+
+    def to_frames(self) -> List[frame.Frame]:
+        raise NotImplementedError
+
+
+@dataclass
+class Reminder(Record):
+    color: str
+    year: Optional[int]
+    month: Optional[int]
+    day: Optional[int]
+    alarm_time: Optional[datetime.time]
+    description: str
+
+    DIRECTORY: ClassVar[Optional[Type[frame.Directory]]] = frame.ReminderDirectory
+
+    DESCRIPTION: str = "Reminder"
+
+    def __str__(self) -> str:
+        info_str = "Reminder: "
+        if self.year:
+            info_str += str(self.year) + "-"
+        else:
+            info_str += "-----"
+        if self.month:
+            info_str += str(self.month) + "-"
+        else:
+            info_str += "---"
+        if self.day:
+            info_str += str(self.day) + " "
+        else:
+            info_str += "-- "
+        if self.alarm_time:
+            info_str += f"{self.alarm_time.hour}:{self.alarm_time.minute}"
+        else:
+            info_str += "--:--"
+        info_str += f" {self.description}"
+        return info_str
+
+    @classmethod
+    def from_frames(cls, frames: List[frame.Frame]) -> "Reminder":
+        color: str = "Blue"
+        year: Optional[int] = None
+        month: Optional[int] = None
+        day: Optional[int] = None
+        alarm_time: Optional[datetime.time] = None
+        description: str = ""
+
+        for f in frames:
+            if isinstance(f, frame.Color):
+                color = f.name
+            elif isinstance(f, frame.Date):
+                year = f.year
+                month = f.month
+                day = f.day
+            elif isinstance(f, frame.Alarm):
+                alarm_time = f.time
+            elif isinstance(f, frame.Text):
+                description = f.text
+            else:
+                raise ValueError(f"Unknown frame type: {type(f)}")
+
+        if description == "":
+            raise ValueError("Missing description")
+
+        return cls(color, year, month, day, alarm_time, description)
 
     def to_frames(self) -> List[frame.Frame]:
         raise NotImplementedError
