@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import List, Type, Iterable, ClassVar, Dict, Optional, Tuple
+from typing import List, Type, Iterable, ClassVar, Dict, Optional, Tuple, Set
 from abc import ABC, abstractmethod
 import datetime
 
@@ -455,8 +455,8 @@ class ToDoAlarm(TextDataFrame):
         return False
 
 
-class CalendarDateHighlight(Frame):
-    DESCRIPTION: str = "Calendar Date Highlight"
+class DatesHighlight(Frame):
+    DESCRIPTION: str = "Dates Highlight"
 
     @classmethod
     def match(cls, length: int, frame_type: int, address: int, data: List[int]) -> bool:
@@ -464,19 +464,23 @@ class CalendarDateHighlight(Frame):
             return True
         return False
 
-    def __str__(self):
-        highlighted_days: List[int] = []
+    @property
+    def dates(self) -> Set[int]:
+        dates: List[int] = []
         for idx, data in enumerate(self.data):
             for bit in range(8):
                 if data & (1 << bit):
-                    highlighted_days.append((3 - idx) * 8 + bit + 1)
+                    dates.append((3 - idx) * 8 + bit + 1)
+        return set(dates)
+
+    def __str__(self):
         return f"{self.DESCRIPTION}: " + " ".join(
-            str(day) for day in reversed(highlighted_days)
+            str(day) for day in sorted(self.dates)
         )
 
 
-class CalendarDateColorHighlight(Frame):
-    DESCRIPTION: str = "Calendar Date Color & Highlight"
+class DateColorHighlight(Frame):
+    DESCRIPTION: str = "Date Color & Highlight"
 
     @classmethod
     def match(cls, length: int, frame_type: int, address: int, data: List[int]) -> bool:
@@ -484,19 +488,52 @@ class CalendarDateColorHighlight(Frame):
             return True
         return False
 
+    def _get_date_color_highlight(self) -> List[Tuple[str, bool]]:
+        color_highlight: List[Tuple[str, bool]] = []
+        for info in reversed(self.data):
+            if info & 0x1:
+                color = "Blue"
+            if info & 0x4:
+                color = "Green"
+            if info & 0x2:
+                color = "Orange"
+            highlight = False
+            if info & 0x80:
+                highlight = True
+            color_highlight.append(tuple([color, highlight]))
+        return color_highlight
+
+    @property
+    def highlighted_dates(self) -> Set[int]:
+        highlighted_dates: Set[int] = set()
+        for idx, value in enumerate(self._get_date_color_highlight()):
+            _color, highlight = value
+            date = idx + 1
+            if date > 31:
+                continue
+            if highlight:
+                highlighted_dates.add(date)
+        return highlighted_dates
+
+    @property
+    def date_colors(self) -> List[str]:
+        date_colors: List[int] = []
+        for idx, value in enumerate(self._get_date_color_highlight()):
+            color, _highlight = value
+            date = idx + 1
+            if date > 31:
+                continue
+            date_colors.append(color)
+        return date_colors
+
     def __str__(self):
         info_list = []
-        for day, info in enumerate(reversed(self.data)):
-            if info & 0x1:
-                color = "b"
-            if info & 0x4:
-                color = "g"
-            if info & 0x2:
-                color = "o"
-            highlight = ""
-            if info & 0x80:
-                highlight = "*"
-            info_list.append(f"{day+1}{color}{highlight}")
+        for idx, value in enumerate(self._get_date_color_highlight()):
+            color, highlight = value
+            date = idx + 1
+            if date > 31:
+                continue
+            info_list.append(f"{date}{color[0].lower()}{'*' if highlight else ''}")
         return f"{self.DESCRIPTION}: " + " ".join(info_list)
 
 

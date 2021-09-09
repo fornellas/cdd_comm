@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import List, Optional, Dict, ClassVar
+from typing import List, Optional, Dict, ClassVar, Set
 from . import frame
 from dataclasses import dataclass
 import datetime
@@ -94,7 +94,7 @@ class BusinessCard(Record):
         return f"Business Card: {repr(self.employer)}, {repr(self.name)}, {repr(self.telephone_number)}, {repr(self.telex_number)}, {repr(self.fax_number)}, {repr(self.position)}, {repr(self.department)}, {repr(self.po_box)}, {repr(self.address)}, {repr(self.memo)} ({self.color})"
 
     @classmethod
-    def from_frames(cls, frames: List[frame.Frame]) -> "Telephone":
+    def from_frames(cls, frames: List[frame.Frame]) -> "BusinessCard":
         text = ""
         color = "Blue"
         for f in frames:
@@ -165,7 +165,7 @@ class Memo(Record):
         return f"Memo: {repr(self.text)}"
 
     @classmethod
-    def from_frames(cls, frames: List[frame.Frame]) -> "Telephone":
+    def from_frames(cls, frames: List[frame.Frame]) -> "Memo":
         text = ""
         color = "Blue"
         for f in frames:
@@ -184,29 +184,47 @@ class Memo(Record):
 
 @dataclass
 class Calendar(Record):
-    color: str
-    text: str
+    year: int
+    month: int
+    highlighted_dates: Set[int]
+    date_colors: List[str]
 
-    DIRECTORY: ClassVar[Optional[frame.Directory]] = frame.MemoDirectory
+    DIRECTORY: ClassVar[Optional[frame.Directory]] = frame.CalendarDirectory
 
-    DESCRIPTION: str = "Memo"
+    DESCRIPTION: str = "Calendar"
 
     def __str__(self):
-        return f"Memo: {repr(self.text)}"
+        info_list = []
+        for date in range(1, 32):
+            color = self.date_colors[date - 1][0].lower()
+            highlight = "*" if date in self.highlighted_dates else ""
+            info_list.append(f"{date}{color}{highlight}")
+        return f"{self.DESCRIPTION}: " + " ".join(info_list)
 
     @classmethod
-    def from_frames(cls, frames: List[frame.Frame]) -> "Telephone":
-        text = ""
-        color = "Blue"
+    def from_frames(cls, frames: List[frame.Frame]) -> "Calendar":
+        year: int = 0
+        month: int = 0
+        highlighted_dates: Set[int] = set()
+        date_colors: List[str] = []
         for f in frames:
-            if isinstance(f, frame.Color):
-                color = f.name
-            elif isinstance(f, frame.Text):
-                text += str(f.text)
+            if isinstance(f, frame.Date):
+                year = f.date.year
+                month = f.date.month
+            elif isinstance(f, frame.DatesHighlight):
+                for date in f.dates:
+                    highlighted_dates.add(date)
+            elif isinstance(f, frame.DateColorHighlight):
+                for date in f.highlighted_dates:
+                    highlighted_dates.add(date)
+                date_colors = f.date_colors
             else:
                 raise ValueError(f"Unknown frame type: {type(f)}")
 
-        return cls(color, text)
+        if year == 0 or month == 0:
+            raise ValueError("Missing Date frame")
+
+        return cls(year, month, highlighted_dates, date_colors)
 
     def to_frames(self) -> List[frame.Frame]:
         raise NotImplementedError
@@ -230,7 +248,7 @@ class ScheduleKeeper(Record):
         return f"Schedule Keeper: {self.date}, {self.start_time}, {self.end_time}, {self.alarm_time}, {self.illustration}, {self.description} ({self.color})"
 
     @classmethod
-    def from_frames(cls, frames: List[frame.Frame]) -> "Telephone":
+    def from_frames(cls, frames: List[frame.Frame]) -> "ScheduleKeeper":
         color: str = "Blue"
         date: datetime.date = None
         start_time: datetime.time = None
