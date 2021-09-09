@@ -242,23 +242,32 @@ class Decoder(srd.Decoder):
                     annotation = (
                         f"sender-record-{type(decoded_record).__name__.lower()}"
                     )
+                    self.put(
+                        self._record_startsample,
+                        endsample,
+                        self.out_ann,
+                        [
+                            _get_annotation_index(
+                                self.annotations,
+                                annotation,
+                            ),
+                            [decoded_str],
+                        ],
+                    )
                 else:
                     decoded_str = "Unknown Record: " + ", ".join(
                         str(f) for f in self._record_frames
                     )
                     annotation = "sender-record-unknown"
-                self.put(
-                    self._record_startsample,
-                    endsample,
-                    self.out_ann,
-                    [
-                        _get_annotation_index(
-                            self.annotations,
-                            annotation,
-                        ),
-                        [decoded_str],
-                    ],
-                )
+                    self.put(
+                        self._record_startsample,
+                        endsample,
+                        self.out_ann,
+                        [
+                            _get_annotation_index(self.annotations, "sender-warning"),
+                            [decoded_str],
+                        ],
+                    )
                 self._record_state = "directory_or_record"
             else:
                 self._record_frames.append(decoded_frame)
