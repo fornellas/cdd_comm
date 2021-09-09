@@ -455,8 +455,28 @@ class ToDoAlarm(TextDataFrame):
         return False
 
 
-class CalendarHighlight(Frame):
-    DESCRIPTION: str = "Calendar Highlight"
+class CalendarDateHighlight(Frame):
+    DESCRIPTION: str = "Calendar Date Highlight"
+
+    @classmethod
+    def match(cls, length: int, frame_type: int, address: int, data: List[int]) -> bool:
+        if length == 0x4 and frame_type == 0xD0 and address == 0x0:
+            return True
+        return False
+
+    def __str__(self):
+        highlighted_days: List[int] = []
+        for idx, data in enumerate(self.data):
+            for bit in range(8):
+                if data & (1 << bit):
+                    highlighted_days.append((3 - idx) * 8 + bit + 1)
+        return f"{self.DESCRIPTION}: " + " ".join(
+            str(day) for day in reversed(highlighted_days)
+        )
+
+
+class CalendarDateColorHighlight(Frame):
+    DESCRIPTION: str = "Calendar Date Color & Highlight"
 
     @classmethod
     def match(cls, length: int, frame_type: int, address: int, data: List[int]) -> bool:
