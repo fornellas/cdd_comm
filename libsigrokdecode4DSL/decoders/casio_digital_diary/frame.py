@@ -450,8 +450,8 @@ class Date(TextDataFrame):
         return False
 
 
-class ToDoDate(TextDataFrame):
-    DESCRIPTION: ClassVar[str] = "To Do Date"
+class DeadlineDate(Date):
+    DESCRIPTION: ClassVar[str] = "Deadline Date"
 
     @classmethod
     def match(cls, length: int, frame_type: int, address: int, data: List[int]) -> bool:
@@ -460,26 +460,13 @@ class ToDoDate(TextDataFrame):
         return False
 
 
-class DoDoPriority(Frame):
-    DESCRIPTION: ClassVar[str] = "To Do Priority"
-    _NAME: Dict[int, str] = {
-        0x10: "A: Orange",
-        0x20: "B: Blue",
-        0x30: "C: Green",
-    }
+class DeadlineTime(TextDataFrame):
+    DESCRIPTION: ClassVar[str] = "Deadline Time"
 
-    @classmethod
-    def match(cls, length: int, frame_type: int, address: int, data: List[int]) -> bool:
-        if length == 0x1 and frame_type == 0x72 and address == 0x0:
-            return True
-        return False
-
-    def __str__(self) -> str:
-        return f"{self.DESCRIPTION}: {self._NAME[self.data[0]]}"
-
-
-class ToDoTime(TextDataFrame):
-    DESCRIPTION: ClassVar[str] = "To Do Time"
+    @property
+    def time(self) -> datetime.time:
+        hour_str, minute_str = self.text.split(":")
+        return datetime.time(int(hour_str), int(minute_str))
 
     @classmethod
     def match(cls, length: int, frame_type: int, address: int, data: List[int]) -> bool:
@@ -488,8 +475,40 @@ class ToDoTime(TextDataFrame):
         return False
 
 
+class Priority(Frame):
+    DESCRIPTION: ClassVar[str] = "Priority"
+    _NAME: Dict[int, str] = {
+        0x10: "A (Orange)",
+        0x20: "B (Blue)",
+        0x30: "C (Green)",
+    }
+
+    @property
+    def value(self) -> str:
+        return self._NAME[self.data[0]]
+
+    @classmethod
+    def match(cls, length: int, frame_type: int, address: int, data: List[int]) -> bool:
+        if (
+            length == 0x1
+            and frame_type == 0x72
+            and address == 0x0
+            and data[0] in cls._NAME.keys()
+        ):
+            return True
+        return False
+
+    def __str__(self) -> str:
+        return f"{self.DESCRIPTION}: {self.value}"
+
+
 class ToDoAlarm(TextDataFrame):
     DESCRIPTION: ClassVar[str] = "To Do Alarm"
+
+    @property
+    def time(self) -> datetime.time:
+        hour_str, minute_str = self.text.split(":")
+        return datetime.time(int(hour_str), int(minute_str))
 
     @classmethod
     def match(cls, length: int, frame_type: int, address: int, data: List[int]) -> bool:
@@ -601,6 +620,10 @@ class Time(TextDataFrame):
     @property
     def start_time(self) -> datetime.time:
         return self._get_start_end_times()[0]
+
+    @property
+    def time(self) -> datetime.time:
+        return self.start_time
 
     @property
     def end_time(self) -> Optional[datetime.time]:

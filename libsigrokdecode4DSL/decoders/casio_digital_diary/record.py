@@ -374,3 +374,81 @@ class Reminder(Record):
 
     def to_frames(self) -> List[frame.Frame]:
         raise NotImplementedError
+
+
+@dataclass
+class ToDo(Record):
+    deadline_date: Optional[datetime.date]
+    deadline_time: Optional[datetime.time]
+    alarm: Optional[datetime.time]
+    checked_date: Optional[datetime.date]
+    checked_time: Optional[datetime.time]
+    description: str
+    priority: str
+
+    DIRECTORY: ClassVar[Optional[Type[frame.Directory]]] = frame.ToDoDirectory
+
+    DESCRIPTION: str = "To Do"
+
+    def __str__(self) -> str:
+        info_str = "To Do: "
+        if self.deadline_date:
+            info_str += "Deadline: " + str(self.deadline_date) + " "
+        if self.deadline_time:
+            info_str += str(self.deadline_time) + " "
+        if self.alarm:
+            info_str += "Alarm: " + str(self.alarm) + " "
+        if self.checked_date:
+            info_str += "Checked: " + str(self.checked_date) + " "
+        if self.checked_time:
+            info_str += str(self.checked_time) + " "
+        info_str += self.description + " "
+        info_str += self.priority
+        return info_str
+
+    @classmethod
+    def from_frames(cls, frames: List[frame.Frame]) -> "ToDo":
+        deadline_date: Optional[datetime.date] = None
+        deadline_time: Optional[datetime.time] = None
+        alarm: Optional[datetime.time] = None
+        checked_date: Optional[datetime.date] = None
+        checked_time: Optional[datetime.time] = None
+        description: str = ""
+        priority: str = ""
+
+        for f in frames:
+            if isinstance(f, frame.DeadlineDate):
+                deadline_date = f.date
+            elif isinstance(f, frame.DeadlineTime):
+                deadline_time = f.time
+            elif isinstance(f, frame.ToDoAlarm):
+                alarm = f.time
+            elif isinstance(f, frame.Date):
+                checked_date = f.date
+            elif isinstance(f, frame.Time):
+                checked_time = f.time
+            elif isinstance(f, frame.Text):
+                description = f.text
+            elif isinstance(f, frame.Priority):
+                priority = f.value
+            else:
+                raise ValueError(f"Unknown frame type: {type(f)}")
+
+        if description == "":
+            raise ValueError("Missing description")
+
+        if priority == "":
+            raise ValueError("Missing priority")
+
+        return cls(
+            deadline_date,
+            deadline_time,
+            alarm,
+            checked_date,
+            checked_time,
+            description,
+            priority,
+        )
+
+    def to_frames(self) -> List[frame.Frame]:
+        raise NotImplementedError
