@@ -74,7 +74,14 @@ class Telephone(Record):
         return cls(color, name, number, address, memo)
 
     def to_frames(self) -> List[frame.Frame]:
-        raise NotImplementedError
+        text_list: List[str] = [self.name]
+        if self.number is not None:
+            text_list.append(self.number)
+        if self.address is not None:
+            text_list.append(self.address)
+        if self.memo is not None:
+            text_list.append(self.memo)
+        return [frame.Color.get(self.color), *frame.Text.from_text_list(text_list)]
 
 
 @dataclass

@@ -23,7 +23,7 @@ class Frame:
     _FRAME_START: int = 0x3A
 
     @classmethod
-    def get_kebab_case_description(cls):
+    def get_kebab_case_description(cls) -> str:
         return cls.DESCRIPTION.lower().replace(" ", "-")
 
     def __init_subclass__(cls, *args, **kwargs):
@@ -33,6 +33,20 @@ class Frame:
     def __str__(self) -> str:
         return f"Frame: " + "".join(
             chr(d) if chr(d).isprintable() else f"[{hex(d)}]" for d in self.data
+        )
+
+    def __hash__(self) -> int:
+        return id(self)
+
+    def __eq__(self, other) -> bool:
+        if type(other) != type(self):
+            return False
+        return (
+            self.length == other.length
+            and self.type == other.type
+            and self.address == other.address
+            and self.data == other.data
+            and self.checksum == other.checksum
         )
 
     @staticmethod
@@ -57,19 +71,20 @@ class Frame:
 
     @staticmethod
     def _encode(value: int) -> List[int]:
-        return list(ord(v) for v in "%02x" % value)
+        return list(ord(v) for v in "%02X" % value)
 
-    def bytes(self) -> List[int]:
+    def bytes(self) -> bytes:
         bytes_list: List[int] = [
             self._FRAME_START,
             *self._encode(self.length),
             *self._encode(self.type),
-            *self._encode(self.address),
+            *self._encode(self.address & 0xFF),
+            *self._encode((self.address & 0xFF00) >> 8),
         ]
         for d in self.data:
             bytes_list.extend(self._encode(d))
         bytes_list.extend(self._encode(self.checksum))
-        return bytes_list
+        return bytes(bytes_list)
 
     @classmethod
     def from_data(
@@ -110,8 +125,8 @@ class Directory(Frame):
             return False
 
     @classmethod
-    def get(cls):
-        cls(
+    def get(cls) -> "Directory":
+        return cls(
             cls.LENGTH,
             cls.TYPE,
             cls.ADDRESS,
@@ -168,23 +183,40 @@ class ExpenseManagerDirectory(Directory):
 
 class Color(Frame):
     DESCRIPTION: ClassVar[str] = "Color"
-    _NAMES: Dict[int, str] = {
+    LENGTH: int = 0x1
+    TYPE: int = 0x71
+    ADDRESS: int = 0x0
+    CODE_TO_COLOR: Dict[int, str] = {
         0x1: "Blue",
         0x2: "Orange",
         0x4: "Green",
     }
+    COLOR_TO_CODE: Dict[str, int] = {
+        color: code for code, color in CODE_TO_COLOR.items()
+    }
 
     @property
     def name(self):
-        return self._NAMES[self.data[0]]
+        return self.CODE_TO_COLOR[self.data[0]]
+
+    @classmethod
+    def get(cls, color: str) -> "Color":
+        data = [cls.COLOR_TO_CODE[color]]
+        return cls(
+            cls.LENGTH,
+            cls.TYPE,
+            cls.ADDRESS,
+            data,
+            cls.calculate_checksum(cls.LENGTH, cls.TYPE, cls.ADDRESS, data),
+        )
 
     @classmethod
     def match(cls, length: int, frame_type: int, address: int, data: List[int]) -> bool:
         if (
-            length == 0x1
-            and frame_type == 0x71
-            and address == 0x0
-            and data[0] in cls._NAMES.keys()
+            length == cls.LENGTH
+            and frame_type == cls.TYPE
+            and address == cls.ADDRESS
+            and data[0] in cls.CODE_TO_COLOR.keys()
         ):
             return True
         return False
@@ -682,6 +714,34 @@ class Text(TextDataFrame):
             return True
         return False
 
+    @classmethod
+    def from_text_list(cls, text_list: List[str]) -> List["Text"]:
+        frames: List[Text] = []
+        address: int = 0
+
+        for idx, text in enumerate(text_list):
+            if idx + 1 < len(text_list):
+                text = text + chr(0x1F)
+            if len(text) < 0x100:
+                length: int = len(text)
+                frame_type: int = 0x80
+                data = [cls.UNICODE_TO_CASIO.get(c, "?") for c in text]
+                checksum: int = cls.calculate_checksum(
+                    length, frame_type, address, data
+                )
+                frames.append(
+                    cls(
+                        length=length,
+                        type=frame_type,
+                        address=address,
+                        data=data,
+                        checksum=checksum,
+                    )
+                )
+            address += len(text)
+
+        return frames
+
 
 # End
 
@@ -700,8 +760,8 @@ class EndOfRecord(Frame):
         return False
 
     @classmethod
-    def get(cls):
-        cls(
+    def get(cls) -> "EndOfRecord":
+        return cls(
             cls.LENGTH,
             cls.TYPE,
             cls.ADDRESS,
@@ -727,8 +787,8 @@ class EndOfTransmission(Frame):
         return False
 
     @classmethod
-    def get(cls):
-        cls(
+    def get(cls) -> "EndOfTransmission":
+        return cls(
             cls.LENGTH,
             cls.TYPE,
             cls.ADDRESS,
