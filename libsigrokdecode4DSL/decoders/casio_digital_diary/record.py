@@ -452,3 +452,90 @@ class ToDo(Record):
 
     def to_frames(self) -> List[frame.Frame]:
         raise NotImplementedError
+
+
+@dataclass
+class Expense(Record):
+    color: str
+    date: datetime.date
+    amount: float
+    payment_type: Optional[str]
+    expense_type: Optional[str]
+    rcpt: Optional[str]  # Empty for CSF-8950
+    bus: Optional[str]  # Empty for CSF-8950
+    description: Optional[str]
+
+    DIRECTORY: ClassVar[Optional[Type[frame.Directory]]] = frame.ExpenseManagerDirectory
+
+    DESCRIPTION: str = "Expense"
+
+    def __str__(self) -> str:
+        info_str = f"Expense: {self.date}, Amount: {self.amount}"
+        if self.payment_type is not None:
+            info_str += f", Payment Type: {self.payment_type}"
+        if self.expense_type is not None:
+            info_str += f", Expense Type: {self.expense_type}"
+        if self.rcpt is not None:
+            info_str += f", rcpt: {self.rcpt}"
+        if self.bus is not None:
+            info_str += f", bus: {self.bus}"
+        if self.description is not None:
+            info_str += f", Description: {self.description}"
+        info_str += f" ({self.color})"
+        return info_str
+
+    @classmethod
+    def from_frames(cls, frames: List[frame.Frame]) -> "Expense":
+        text = ""
+        color = "Blue"
+        for f in frames:
+            if isinstance(f, frame.Color):
+                color = f.name
+            elif isinstance(f, frame.Text):
+                text += f.text
+            else:
+                raise ValueError(f"Unknown frame type: {type(f)}")
+        fields: List[Optional[str]] = [
+            None if v == "" else v for v in text.split(chr(0x1F))
+        ]
+
+        if len(fields) < 2:
+            raise ValueError("Missing date and/or amount.")
+
+        date_str = fields[0]
+        assert date_str is not None
+        year_str = int(date_str[0:4])
+        month_str = int(date_str[4:6])
+        day_str = int(date_str[6:8])
+        date = datetime.date(year_str, month_str, day_str)
+
+        amount_str = fields[1]
+        assert amount_str is not None
+        amount = float(amount_str)
+
+        payment_type: Optional[str] = None
+        if len(fields) > 2:
+            payment_type = fields[2]
+
+        expense_type: Optional[str] = None
+        if len(fields) > 3:
+            expense_type = fields[3]
+
+        rcpt: Optional[str] = None
+        if len(fields) > 4:
+            rcpt = fields[4]
+
+        bus: Optional[str] = None
+        if len(fields) > 5:
+            bus = fields[5]
+
+        description: Optional[str] = None
+        if len(fields) > 6:
+            description = fields[6]
+
+        return cls(
+            color, date, amount, payment_type, expense_type, rcpt, bus, description
+        )
+
+    def to_frames(self) -> List[frame.Frame]:
+        raise NotImplementedError
