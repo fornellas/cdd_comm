@@ -45,8 +45,10 @@ _ANNOTATIONS = (
     ],
     ("sender-record-unknown", "Unknown Record"),
     ("sender-warning", "Sender Warning"),
-    ("receiver-ready", "Receiver Ready"),
-    ("receiver-ack", "Receiver Ack"),
+    ("receiver-xon", "Receiver XON"),
+    ("receiver-xoff", "Receiver XOFF"),
+    ("receiver-ack", "Receiver ACK"),
+    ("receiver-nack", "Receiver NACK"),
     ("receiver-warning", "Receiver Warning"),
 )
 
@@ -117,8 +119,10 @@ class Decoder(sigrokdecode.Decoder):
             "receiver",
             "Receiver",
             (
-                _get_annotation_index(annotations, "receiver-ready"),
+                _get_annotation_index(annotations, "receiver-xon"),
+                _get_annotation_index(annotations, "receiver-xoff"),
                 _get_annotation_index(annotations, "receiver-ack"),
+                _get_annotation_index(annotations, "receiver-nack"),
             ),
         ),
         (
@@ -147,8 +151,20 @@ class Decoder(sigrokdecode.Decoder):
                 endsample,
                 self.out_ann,
                 [
-                    _get_annotation_index(self.annotations, "receiver-ready"),
-                    ["Ready"],
+                    _get_annotation_index(self.annotations, "receiver-xon"),
+                    ["XON"],
+                ],
+            )
+            return
+
+        if data == 0x13:
+            self.put(
+                startsample,
+                endsample,
+                self.out_ann,
+                [
+                    _get_annotation_index(self.annotations, "receiver-xoff"),
+                    ["XOFF"],
                 ],
             )
             return
@@ -161,6 +177,18 @@ class Decoder(sigrokdecode.Decoder):
                 [
                     _get_annotation_index(self.annotations, "receiver-ack"),
                     ["Ack"],
+                ],
+            )
+            return
+
+        if data == 0x3F:
+            self.put(
+                startsample,
+                endsample,
+                self.out_ann,
+                [
+                    _get_annotation_index(self.annotations, "receiver-nack"),
+                    ["NACK"],
                 ],
             )
             return
