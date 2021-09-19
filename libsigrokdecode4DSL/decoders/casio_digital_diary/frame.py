@@ -20,6 +20,8 @@ class Frame:
 
     SUBCLASSES: ClassVar[List[Type["Frame"]]] = []
 
+    _FRAME_START: int = 0x3A
+
     @classmethod
     def get_kebab_case_description(cls):
         return cls.DESCRIPTION.lower().replace(" ", "-")
@@ -33,21 +35,41 @@ class Frame:
             chr(d) if chr(d).isprintable() else f"[{hex(d)}]" for d in self.data
         )
 
-    def is_checksum_valid(self) -> bool:
+    @staticmethod
+    def calculate_checksum(
+        length: int, frame_type: int, address: int, data: List[int]
+    ) -> int:
         checksum = (
-            self.length
-            + self.type
-            + ((self.address >> 8) & 0xFF)
-            + (self.address & 0xFF)
-            + sum(self.data)
+            length + frame_type + ((address >> 8) & 0xFF) + (address & 0xFF) + sum(data)
         )
         checksum &= 0xFF
         checksum = 0xFF - checksum
         checksum += 1
-        if self.checksum == checksum:
+        return checksum
+
+    def is_checksum_valid(self) -> bool:
+        if self.checksum == self.calculate_checksum(
+            self.length, self.type, self.address, self.data
+        ):
             return True
         else:
             return False
+
+    @staticmethod
+    def _encode(value: int) -> List[int]:
+        return list(ord(v) for v in "%02x" % value)
+
+    def bytes(self) -> List[int]:
+        bytes_list: List[int] = [
+            self._FRAME_START,
+            *self._encode(self.length),
+            *self._encode(self.type),
+            *self._encode(self.address),
+        ]
+        for d in self.data:
+            bytes_list.extend(self._encode(d))
+        bytes_list.extend(self._encode(self.checksum))
+        return bytes_list
 
     @classmethod
     def from_data(
@@ -86,6 +108,16 @@ class Directory(Frame):
             return True
         else:
             return False
+
+    @classmethod
+    def get(cls):
+        cls(
+            cls.LENGTH,
+            cls.TYPE,
+            cls.ADDRESS,
+            cls.DATA,
+            cls.calculate_checksum(cls.LENGTH, cls.TYPE, cls.ADDRESS, cls.DATA),
+        )
 
     def __str__(self) -> str:
         return f"{self.DESCRIPTION}"
@@ -656,12 +688,26 @@ class Text(TextDataFrame):
 
 class EndOfRecord(Frame):
     DESCRIPTION: ClassVar[str] = "End Of Record"
+    LENGTH: int = 0x0
+    TYPE: int = 0x0
+    ADDRESS: int = 0x100
+    DATA: List[int] = []
 
     @classmethod
     def match(cls, length: int, frame_type: int, address: int, data: List[int]) -> bool:
-        if length == 0x0 and frame_type == 0x0 and address == 0x100:
+        if length == cls.LENGTH and frame_type == cls.TYPE and address == cls.ADDRESS:
             return True
         return False
+
+    @classmethod
+    def get(cls):
+        cls(
+            cls.LENGTH,
+            cls.TYPE,
+            cls.ADDRESS,
+            cls.DATA,
+            cls.calculate_checksum(cls.LENGTH, cls.TYPE, cls.ADDRESS, cls.DATA),
+        )
 
     def __str__(self) -> str:
         return "End"
@@ -669,12 +715,26 @@ class EndOfRecord(Frame):
 
 class EndOfTransmission(Frame):
     DESCRIPTION: ClassVar[str] = "End Of Transmission"
+    LENGTH: int = 0x0
+    TYPE: int = 0x0
+    ADDRESS: int = 0xFF00
+    DATA: List[int] = []
 
     @classmethod
     def match(cls, length: int, frame_type: int, address: int, data: List[int]) -> bool:
-        if length == 0x0 and frame_type == 0x0 and address == 0xFF00:
+        if length == cls.LENGTH and frame_type == cls.TYPE and address == cls.ADDRESS:
             return True
         return False
+
+    @classmethod
+    def get(cls):
+        cls(
+            cls.LENGTH,
+            cls.TYPE,
+            cls.ADDRESS,
+            cls.DATA,
+            cls.calculate_checksum(cls.LENGTH, cls.TYPE, cls.ADDRESS, cls.DATA),
+        )
 
     def __str__(self) -> str:
         return "End Of Transmission"
