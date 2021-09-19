@@ -9,7 +9,7 @@ class Record(ABC):
 
     DESCRIPTION: str = "Record"
 
-    DIRECTORY: ClassVar[Optional[Type[frame.Directory]]] = None
+    DIRECTORY: ClassVar[Type[frame.Directory]]
 
     DIRECTORY_TO_RECORD: Dict[Type[frame.Directory], "Record"] = {}
 
@@ -35,7 +35,7 @@ class Telephone(Record):
     address: Optional[str]
     memo: Optional[str]
 
-    DIRECTORY: ClassVar[Optional[Type[frame.Directory]]] = frame.TelephoneDirectory
+    DIRECTORY: ClassVar[Type[frame.Directory]] = frame.TelephoneDirectory
 
     DESCRIPTION: str = "Telephone"
 
@@ -91,7 +91,7 @@ class BusinessCard(Record):
     address: Optional[str]
     memo: Optional[str]
 
-    DIRECTORY: ClassVar[Optional[Type[frame.Directory]]] = frame.BusinessCardDirectory
+    DIRECTORY: ClassVar[Type[frame.Directory]] = frame.BusinessCardDirectory
 
     DESCRIPTION: str = "Business Card"
 
@@ -168,7 +168,7 @@ class Memo(Record):
     color: str
     text: str
 
-    DIRECTORY: ClassVar[Optional[Type[frame.Directory]]] = frame.MemoDirectory
+    DIRECTORY: ClassVar[Type[frame.Directory]] = frame.MemoDirectory
 
     DESCRIPTION: str = "Memo"
 
@@ -200,7 +200,7 @@ class Calendar(Record):
     highlighted_dates: Set[int]
     date_colors: List[str]
 
-    DIRECTORY: ClassVar[Optional[Type[frame.Directory]]] = frame.CalendarDirectory
+    DIRECTORY: ClassVar[Type[frame.Directory]] = frame.CalendarDirectory
 
     DESCRIPTION: str = "Calendar"
 
@@ -255,7 +255,7 @@ class ScheduleKeeper(Record):
     illustration: Optional[int]
     description: Optional[str]
 
-    DIRECTORY: ClassVar[Optional[Type[frame.Directory]]] = frame.ScheduleKeeperDirectory
+    DIRECTORY: ClassVar[Type[frame.Directory]] = frame.ScheduleKeeperDirectory
 
     DESCRIPTION: str = "Schedule Keeper"
 
@@ -319,7 +319,7 @@ class Reminder(Record):
     alarm_time: Optional[datetime.time]
     description: str
 
-    DIRECTORY: ClassVar[Optional[Type[frame.Directory]]] = frame.ReminderDirectory
+    DIRECTORY: ClassVar[Type[frame.Directory]] = frame.ReminderDirectory
 
     DESCRIPTION: str = "Reminder"
 
@@ -386,7 +386,7 @@ class ToDo(Record):
     description: str
     priority: str
 
-    DIRECTORY: ClassVar[Optional[Type[frame.Directory]]] = frame.ToDoDirectory
+    DIRECTORY: ClassVar[Type[frame.Directory]] = frame.ToDoDirectory
 
     DESCRIPTION: str = "To Do"
 
@@ -465,7 +465,7 @@ class Expense(Record):
     bus: Optional[str]  # Empty for CSF-8950
     description: Optional[str]
 
-    DIRECTORY: ClassVar[Optional[Type[frame.Directory]]] = frame.ExpenseManagerDirectory
+    DIRECTORY: ClassVar[Type[frame.Directory]] = frame.ExpenseManagerDirectory
 
     DESCRIPTION: str = "Expense"
 

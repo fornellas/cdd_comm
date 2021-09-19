@@ -1,5 +1,5 @@
 """
-Decoder for Casio Digital Diaries serial communication protocol.
+Casio Digital Diaries serial communication protocol.
 """
 
-from .pd import Decoder
+from .decoder import Decoder

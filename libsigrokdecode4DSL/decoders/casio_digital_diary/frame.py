@@ -70,9 +70,19 @@ class Directory(Frame):
 
     DESCRIPTION: ClassVar[str] = "Directory"
 
+    LENGTH: ClassVar[int] = 0x2
+    TYPE: ClassVar[int] = 0x0
+    ADDRESS: ClassVar[int] = 0x200
+    DATA: ClassVar[List[int]]
+
     @classmethod
     def match(cls, length: int, frame_type: int, address: int, data: List[int]) -> bool:
-        if length == 0x2 and frame_type == 0x0 and address == 0x200:
+        if (
+            length == cls.LENGTH
+            and frame_type == cls.TYPE
+            and address == cls.ADDRESS
+            and data == cls.DATA
+        ):
             return True
         else:
             return False
@@ -83,82 +93,42 @@ class Directory(Frame):
 
 class TelephoneDirectory(Directory):
     DESCRIPTION: ClassVar[str] = "Telephone Directory"
-
-    @classmethod
-    def match(cls, length: int, frame_type: int, address: int, data: List[int]) -> bool:
-        if super().match(length, frame_type, address, data) and data == [0x90, 0x0]:
-            return True
-        return False
+    DATA: ClassVar[List[int]] = [0x90, 0x0]
 
 
 class BusinessCardDirectory(Directory):
     DESCRIPTION: ClassVar[str] = "Business Card Directory"
-
-    @classmethod
-    def match(cls, length: int, frame_type: int, address: int, data: List[int]) -> bool:
-        if super().match(length, frame_type, address, data) and data == [0xC0, 0x0]:
-            return True
-        return False
+    DATA: ClassVar[List[int]] = [0xC0, 0x0]
 
 
 class MemoDirectory(Directory):
     DESCRIPTION: ClassVar[str] = "Memo Directory"
-
-    @classmethod
-    def match(cls, length: int, frame_type: int, address: int, data: List[int]) -> bool:
-        if super().match(length, frame_type, address, data) and data == [0xA0, 0x0]:
-            return True
-        return False
+    DATA: ClassVar[List[int]] = [0xA0, 0x0]
 
 
 class CalendarDirectory(Directory):
     DESCRIPTION: ClassVar[str] = "Calendar Directory"
-
-    @classmethod
-    def match(cls, length: int, frame_type: int, address: int, data: List[int]) -> bool:
-        if super().match(length, frame_type, address, data) and data == [0x80, 0x0]:
-            return True
-        return False
+    DATA: ClassVar[List[int]] = [0x80, 0x0]
 
 
 class ScheduleKeeperDirectory(Directory):
     DESCRIPTION: ClassVar[str] = "Schedule Keeper Directory"
-
-    @classmethod
-    def match(cls, length: int, frame_type: int, address: int, data: List[int]) -> bool:
-        if super().match(length, frame_type, address, data) and data == [0xB0, 0x0]:
-            return True
-        return False
+    DATA: ClassVar[List[int]] = [0xB0, 0x0]
 
 
 class ReminderDirectory(Directory):
     DESCRIPTION: ClassVar[str] = "Reminder Directory"
-
-    @classmethod
-    def match(cls, length: int, frame_type: int, address: int, data: List[int]) -> bool:
-        if super().match(length, frame_type, address, data) and data == [0x91, 0x0]:
-            return True
-        return False
+    DATA: ClassVar[List[int]] = [0x91, 0x0]
 
 
 class ToDoDirectory(Directory):
     DESCRIPTION: ClassVar[str] = "To Do Directory"
-
-    @classmethod
-    def match(cls, length: int, frame_type: int, address: int, data: List[int]) -> bool:
-        if super().match(length, frame_type, address, data) and data == [0xC1, 0x0]:
-            return True
-        return False
+    DATA: ClassVar[List[int]] = [0xC1, 0x0]
 
 
 class ExpenseManagerDirectory(Directory):
     DESCRIPTION: ClassVar[str] = "Expense Manager Directory"
-
-    @classmethod
-    def match(cls, length: int, frame_type: int, address: int, data: List[int]) -> bool:
-        if super().match(length, frame_type, address, data) and data == [0x92, 0x0]:
-            return True
-        return False
+    DATA: ClassVar[List[int]] = [0x92, 0x0]
 
 
 # Others

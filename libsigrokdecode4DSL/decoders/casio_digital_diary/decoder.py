@@ -1,4 +1,18 @@
-import sigrokdecode as srd
+try:
+    import sigrokdecode
+except ModuleNotFoundError:
+
+    class FakeSigrokDecode:
+        pass
+
+    sigrokdecode = FakeSigrokDecode()
+
+    setattr(sigrokdecode, "OUTPUT_ANN", 0)
+
+    class FakeDecoder:
+        pass
+
+    sigrokdecode.Decoder = FakeDecoder
 from dataclasses import dataclass
 from typing import List, Dict, Optional
 from . import frame
@@ -37,7 +51,7 @@ _ANNOTATIONS = (
 )
 
 
-class Decoder(srd.Decoder):
+class Decoder(sigrokdecode.Decoder):
     api_version = 3
     id = "casio_digital_diary"
     name = "Casio Digital Diary"
@@ -356,7 +370,7 @@ class Decoder(srd.Decoder):
         place to register() the output types, check the user-supplied PD options for
          validity, and so on.
         """
-        self.out_ann = self.register(srd.OUTPUT_ANN)
+        self.out_ann = self.register(sigrokdecode.OUTPUT_ANN)
 
     def reset(self):
         """
