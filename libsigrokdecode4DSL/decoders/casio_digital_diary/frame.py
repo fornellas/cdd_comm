@@ -59,7 +59,7 @@ class Frame:
         checksum &= 0xFF
         checksum = 0xFF - checksum
         checksum += 1
-        return checksum
+        return checksum & 0xFF
 
     def is_checksum_valid(self) -> bool:
         if self.checksum == self.calculate_checksum(
@@ -71,6 +71,8 @@ class Frame:
 
     @staticmethod
     def _encode(value: int) -> List[int]:
+        assert value <= 255
+        assert value >= 0
         return list(ord(v) for v in "%02X" % value)
 
     def bytes(self) -> bytes:
