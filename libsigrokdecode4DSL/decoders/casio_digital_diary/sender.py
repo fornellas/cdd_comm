@@ -34,7 +34,6 @@ class Sender:
             baudrate=self.baudrate,
             bytesize=self.bytesize,
             parity=self.parity,
-            inter_byte_timeout=0.1,
         )
 
     def _wait_xon(self, ser: serial.Serial) -> None:
@@ -73,6 +72,7 @@ class Sender:
                     raise RuntimeError(f"Unexpected: {repr(read)}")
             if ser.write(bytes([d])) != 1:
                 raise RuntimeError("Short write!")
+            # print(f"    > {hex(d)}")
             # This seem to be required otherwise we get constant XOFF
             time.sleep(0.0011)
 
@@ -83,8 +83,10 @@ class Sender:
             time.sleep(0.01)
             print("> Sync 2")
             ser.write(bytes([self.SYNC_2]))
+            original_timeout = ser.timeout
             ser.timeout = 0.2  # FIXME
             xon = ser.read(size=1)
+            ser.timeout = original_timeout
             if len(xon):
                 print("< XON")
                 if xon[0] == self.XON:
@@ -94,7 +96,7 @@ class Sender:
             print("! Timeout")
 
     def _send_frame(self, ser: serial.Serial, frame: frame_mod.Frame) -> None:
-        print(f"  > Frame: {frame}")
+        # print(f"  > Frame: {frame}")
         self._send_bytes(ser, frame.bytes())
 
     def _wait_for_ack(self, ser: serial.Serial) -> None:
