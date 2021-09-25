@@ -205,7 +205,7 @@ class Calendar(Record):
     year: int
     month: int
     highlighted_dates: Set[int]
-    date_colors: List[str]
+    date_colors: Optional[List[str]]
 
     DIRECTORY: ClassVar[Type[frame.Directory]] = frame.CalendarDirectory
 
@@ -214,7 +214,9 @@ class Calendar(Record):
     def __str__(self) -> str:
         info_list = []
         for date in range(1, 32):
-            color = self.date_colors[date - 1][0].lower()
+            color = ""
+            if self.date_colors is not None:
+                color = self.date_colors[date - 1][0].lower()
             highlight = "*" if date in self.highlighted_dates else ""
             info_list.append(f"{date}{color}{highlight}")
         return f"{self.DESCRIPTION}: " + " ".join(info_list)
@@ -224,7 +226,7 @@ class Calendar(Record):
         year: int = 0
         month: int = 0
         highlighted_dates: Set[int] = set()
-        date_colors: List[str] = []
+        date_colors: Optional[List[str]] = None
         for f in frames:
             if isinstance(f, frame.Date):
                 if f.year is None:
