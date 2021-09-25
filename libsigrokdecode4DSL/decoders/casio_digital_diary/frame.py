@@ -725,21 +725,24 @@ class Text(TextDataFrame):
             if idx + 1 < len(text_list):
                 text = text + chr(0x1F)
             if len(text) < 0x100:
-                length: int = len(text)
                 frame_type: int = 0x80
-                data = [cls.UNICODE_TO_CASIO.get(c, "?") for c in text]
-                checksum: int = cls.calculate_checksum(
-                    length, frame_type, address, data
-                )
+                data = [
+                    cls.UNICODE_TO_CASIO.get(c, cls.UNICODE_TO_CASIO["?"]) for c in text
+                ]
+                length: int = len(data)
                 frames.append(
                     cls(
                         length=length,
                         type=frame_type,
                         address=address,
                         data=data,
-                        checksum=checksum,
+                        checksum=cls.calculate_checksum(
+                            length, frame_type, address, data
+                        ),
                     )
                 )
+            else:
+                raise NotImplementedError
             address += len(text)
 
         return frames
