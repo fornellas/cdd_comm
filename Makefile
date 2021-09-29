@@ -35,10 +35,15 @@ black:
 isort: black
 	isort --check-only --profile black $(SRCS_PATHS)
 
+# flake8
+.PHONY: flake8
+flake8: isort
+	flake8 --select=F,C90 $(SRCS_PATHS)
+
 # mypy
 
 .PHONY: mypy
-mypy: isort
+mypy: flake8
 	mypy ${SRCS_PATHS}
 
 .PHONY: mypy-clean

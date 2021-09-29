@@ -1,7 +1,7 @@
 import datetime
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import ClassVar, Dict, Iterable, List, Optional, Set, Tuple, Type
+from typing import ClassVar, Dict, List, Optional, Set, Tuple, Type
 
 ##
 ## Frame
@@ -31,7 +31,7 @@ class Frame:
         cls.SUBCLASSES.append(cls)
 
     def __str__(self) -> str:
-        return f"Frame: " + "".join(
+        return "Frame: " + "".join(
             chr(d) if chr(d).isprintable() else f"[{hex(d)}]" for d in self.data
         )
 

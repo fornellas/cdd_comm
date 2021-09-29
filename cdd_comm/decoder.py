@@ -13,9 +13,7 @@ except ModuleNotFoundError:
         pass
 
     sigrokdecode.Decoder = FakeDecoder
-import re
-from dataclasses import dataclass
-from typing import ClassVar, Dict, List, Optional, Tuple, Union, cast
+from typing import Dict, List, Optional, Tuple, Union, cast
 
 from . import frame, record
 
