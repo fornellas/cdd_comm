@@ -440,6 +440,9 @@ class TextDataFrame(Frame, ABC):
 
 class Date(TextDataFrame):
     DESCRIPTION: ClassVar[str] = "Date"
+    LENGTH: int = 0xA
+    TYPE: int = 0xF0
+    ADDRESS: int = 0x0
 
     def _get_date(self) -> Tuple[Optional[int], Optional[int], Optional[int]]:
         year: Optional[int]
@@ -490,7 +493,7 @@ class Date(TextDataFrame):
 
     @classmethod
     def match(cls, length: int, frame_type: int, address: int, data: List[int]) -> bool:
-        if length == 0xA and frame_type == 0xF0 and address == 0x0:
+        if length == cls.LENGTH and frame_type == cls.TYPE and address == cls.ADDRESS:
             return True
         return False
 

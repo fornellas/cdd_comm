@@ -1,3 +1,4 @@
+import datetime
 from typing import Type
 
 from testslide import TestCase
@@ -163,3 +164,121 @@ class TestColor(TestCase):
                 checksum=0,
             )
             self.assertTrue(isinstance(frame, frame_mod.Color))
+
+
+class DateColor(TestCase):
+    def test_year(self):
+        self.assertEqual(
+            frame_mod.Frame.from_data(
+                length=frame_mod.Date.LENGTH,
+                frame_type=frame_mod.Date.TYPE,
+                address=frame_mod.Date.ADDRESS,
+                data=[ord(c) for c in "----------"],
+                checksum=0,
+            ).year,
+            None,
+        )
+        self.assertEqual(
+            frame_mod.Frame.from_data(
+                length=frame_mod.Date.LENGTH,
+                frame_type=frame_mod.Date.TYPE,
+                address=frame_mod.Date.ADDRESS,
+                data=[ord(c) for c in "2021------"],
+                checksum=0,
+            ).year,
+            2021,
+        )
+
+    def test_month(self):
+        self.assertEqual(
+            frame_mod.Frame.from_data(
+                length=frame_mod.Date.LENGTH,
+                frame_type=frame_mod.Date.TYPE,
+                address=frame_mod.Date.ADDRESS,
+                data=[ord(c) for c in "2021------"],
+                checksum=0,
+            ).month,
+            None,
+        )
+        self.assertEqual(
+            frame_mod.Frame.from_data(
+                length=frame_mod.Date.LENGTH,
+                frame_type=frame_mod.Date.TYPE,
+                address=frame_mod.Date.ADDRESS,
+                data=[ord(c) for c in "2021-03---"],
+                checksum=0,
+            ).month,
+            3,
+        )
+
+    def test_day(self):
+        self.assertEqual(
+            frame_mod.Frame.from_data(
+                length=frame_mod.Date.LENGTH,
+                frame_type=frame_mod.Date.TYPE,
+                address=frame_mod.Date.ADDRESS,
+                data=[ord(c) for c in "2021-03---"],
+                checksum=0,
+            ).day,
+            None,
+        )
+        self.assertEqual(
+            frame_mod.Frame.from_data(
+                length=frame_mod.Date.LENGTH,
+                frame_type=frame_mod.Date.TYPE,
+                address=frame_mod.Date.ADDRESS,
+                data=[ord(c) for c in "2021-03-29"],
+                checksum=0,
+            ).day,
+            29,
+        )
+
+    def test_date(self):
+        frame = frame_mod.Frame.from_data(
+            length=frame_mod.Date.LENGTH,
+            frame_type=frame_mod.Date.TYPE,
+            address=frame_mod.Date.ADDRESS,
+            data=[ord(c) for c in "----------"],
+            checksum=0,
+        )
+        with self.assertRaises(RuntimeError):
+            frame.date
+
+        frame = frame_mod.Frame.from_data(
+            length=frame_mod.Date.LENGTH,
+            frame_type=frame_mod.Date.TYPE,
+            address=frame_mod.Date.ADDRESS,
+            data=[ord(c) for c in "2021------"],
+            checksum=0,
+        )
+        with self.assertRaises(RuntimeError):
+            frame.date
+
+        frame = frame_mod.Frame.from_data(
+            length=frame_mod.Date.LENGTH,
+            frame_type=frame_mod.Date.TYPE,
+            address=frame_mod.Date.ADDRESS,
+            data=[ord(c) for c in "2021-03---"],
+            checksum=0,
+        )
+        with self.assertRaises(RuntimeError):
+            frame.date
+
+        frame = frame_mod.Frame.from_data(
+            length=frame_mod.Date.LENGTH,
+            frame_type=frame_mod.Date.TYPE,
+            address=frame_mod.Date.ADDRESS,
+            data=[ord(c) for c in "2021-03-29"],
+            checksum=0,
+        )
+        self.assertEqual(frame.date, datetime.date(2021, 3, 29))
+
+    def test_match(self) -> None:
+        frame = frame_mod.Frame.from_data(
+            length=frame_mod.Date.LENGTH,
+            frame_type=frame_mod.Date.TYPE,
+            address=frame_mod.Date.ADDRESS,
+            data=[ord(c) for c in "----------"],
+            checksum=0,
+        )
+        self.assertTrue(isinstance(frame, frame_mod.Date))
