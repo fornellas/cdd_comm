@@ -13,11 +13,11 @@ except ModuleNotFoundError:
         pass
 
     sigrokdecode.Decoder = FakeDecoder
-from dataclasses import dataclass
-from typing import List, Dict, Optional, Tuple, Union, ClassVar, cast
-from . import frame
-from . import record
 import re
+from dataclasses import dataclass
+from typing import ClassVar, Dict, List, Optional, Tuple, Union, cast
+
+from . import frame, record
 
 
 def _get_annotation_index(annotations, name):

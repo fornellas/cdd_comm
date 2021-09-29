@@ -1,8 +1,10 @@
+import time
+from typing import Dict, List, Optional
+
+import serial
+
 from . import frame as frame_mod
 from . import record as record_mod
-from typing import Dict, List, Optional
-import serial
-import time
 
 
 class Sender:

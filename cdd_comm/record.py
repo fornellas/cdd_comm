@@ -1,8 +1,9 @@
-from abc import ABC, abstractmethod
-from typing import List, Optional, Dict, ClassVar, Set, Type
-from . import frame
-from dataclasses import dataclass
 import datetime
+from abc import ABC, abstractmethod
+from dataclasses import dataclass
+from typing import ClassVar, Dict, List, Optional, Set, Type
+
+from . import frame
 
 
 class Record(ABC):
