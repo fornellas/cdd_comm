@@ -600,10 +600,13 @@ class Priority(Frame):
 
 class DayHighlight(Frame):
     DESCRIPTION: ClassVar[str] = "Day Highlight"
+    LENGTH: ClassVar[int] = 0x4
+    TYPE: ClassVar[int] = 0xD0
+    ADDRESS: ClassVar[int] = 0x0
 
     @classmethod
     def match(cls, length: int, frame_type: int, address: int, data: List[int]) -> bool:
-        if length == 0x4 and frame_type == 0xD0 and address == 0x0:
+        if length == cls.LENGTH and frame_type == cls.TYPE and address == cls.ADDRESS:
             return True
         return False
 
@@ -622,10 +625,13 @@ class DayHighlight(Frame):
 
 class DayColorHighlight(Frame):
     DESCRIPTION: ClassVar[str] = "Day Color & Highlight"
+    LENGTH: ClassVar[int] = 0x20
+    TYPE: ClassVar[int] = 0x78
+    ADDRESS: ClassVar[int] = 0x0
 
     @classmethod
     def match(cls, length: int, frame_type: int, address: int, data: List[int]) -> bool:
-        if length == 0x20 and frame_type == 0x78 and address == 0x0:
+        if length == cls.LENGTH and frame_type == cls.TYPE and address == cls.ADDRESS:
             return True
         return False
 
@@ -644,7 +650,7 @@ class DayColorHighlight(Frame):
         return color_highlight
 
     @property
-    def highlighted_days(self) -> Set[int]:
+    def days(self) -> Set[int]:
         highlighted_dates: Set[int] = set()
         for idx, value in enumerate(self._get_day_color_highlight()):
             _color, highlight = value
@@ -656,7 +662,7 @@ class DayColorHighlight(Frame):
         return highlighted_dates
 
     @property
-    def day_colors(self) -> List[ColorEnum]:
+    def colors(self) -> List[ColorEnum]:
         day_colors: List[ColorEnum] = []
         for idx, value in enumerate(self._get_day_color_highlight()):
             color, _highlight = value

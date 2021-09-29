@@ -283,7 +283,7 @@ class Calendar(Record):
     year: int
     month: int
     highlighted_days: Set[int]
-    date_colors: Optional[List[frame.ColorEnum]]
+    day_colors: Optional[List[frame.ColorEnum]]
 
     DIRECTORY: ClassVar[Type[frame.Directory]] = frame.CalendarDirectory
 
@@ -293,8 +293,8 @@ class Calendar(Record):
         info_list = []
         for date in range(1, 32):
             color = ""
-            if self.date_colors:
-                color = self.date_colors[date - 1].name[0].lower()
+            if self.day_colors:
+                color = self.day_colors[date - 1].name[0].lower()
             highlight = "*" if date in self.highlighted_days else ""
             info_list.append(f"{date}{color}{highlight}")
         return f"{self.DESCRIPTION}: " + " ".join(info_list)
@@ -304,7 +304,7 @@ class Calendar(Record):
         year: int = 0
         month: int = 0
         highlighted_days: Set[int] = set()
-        date_colors: Optional[List[frame.ColorEnum]] = None
+        day_colors: Optional[List[frame.ColorEnum]] = None
         for f in frames:
             if isinstance(f, frame.Date):
                 if f.year is None:
@@ -317,16 +317,16 @@ class Calendar(Record):
                 for day in f.days:
                     highlighted_days.add(day)
             elif isinstance(f, frame.DayColorHighlight):
-                for date in f.highlighted_days:
+                for date in f.days:
                     highlighted_days.add(date)
-                date_colors = f.day_colors
+                day_colors = f.colors
             else:
                 raise ValueError(f"Unknown frame type: {type(f)}")
 
         if year == 0 or month == 0:
             raise ValueError("Missing Date frame")
 
-        return cls(year, month, highlighted_days, date_colors)
+        return cls(year, month, highlighted_days, day_colors)
 
     def to_frames(self) -> List[frame.Frame]:
         raise NotImplementedError

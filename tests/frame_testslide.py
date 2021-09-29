@@ -1,5 +1,5 @@
 import datetime
-from typing import ClassVar, Type, cast
+from typing import ClassVar, List, Type, cast
 
 from testslide import TestCase
 
@@ -331,8 +331,91 @@ class PriorityTest(TestCase):
         )
 
 
-# TODO DatesHighlight
-# TODO DateColorHighlight
+class DayHighlightTest(TestCase):
+    def setUp(self):
+        self.frame = frame_mod.Frame.from_data(
+            length=frame_mod.DayHighlight.LENGTH,
+            frame_type=frame_mod.DayHighlight.TYPE,
+            address=frame_mod.DayHighlight.ADDRESS,
+            data=[2, 1, 0, 3],
+            checksum=0,
+        )
+
+    def test_days(self):
+        self.assertEqual(self.frame.days, {17, 26, 2, 1})
+
+    def test_match(self) -> None:
+        self.assertTrue(isinstance(self.frame, frame_mod.DayHighlight))
+
+
+class DayColorHighlightTest(TestCase):
+    def setUp(self):
+        data: List[int] = []
+        for idx in range(0, frame_mod.DayColorHighlight.LENGTH):
+            color = frame_mod.ColorEnum.BLUE.value
+            if ((idx + 1) % 3) == 0:
+                color = frame_mod.ColorEnum.ORANGE.value
+            if ((idx + 2) % 3) == 0:
+                color = frame_mod.ColorEnum.GREEN.value
+            highlight = 0
+            if idx % 2:
+                highlight = 0x80
+            data.append(color | highlight)
+        self.frame = frame_mod.Frame.from_data(
+            length=frame_mod.DayColorHighlight.LENGTH,
+            frame_type=frame_mod.DayColorHighlight.TYPE,
+            address=frame_mod.DayColorHighlight.ADDRESS,
+            data=data,
+            checksum=0,
+        )
+
+    def test_days(self):
+        self.assertEqual(
+            self.frame.days, {1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 27, 29, 31}
+        )
+
+    def test_colors(self):
+        self.assertEqual(
+            self.frame.colors,
+            [
+                frame_mod.ColorEnum.GREEN,
+                frame_mod.ColorEnum.BLUE,
+                frame_mod.ColorEnum.ORANGE,
+                frame_mod.ColorEnum.GREEN,
+                frame_mod.ColorEnum.BLUE,
+                frame_mod.ColorEnum.ORANGE,
+                frame_mod.ColorEnum.GREEN,
+                frame_mod.ColorEnum.BLUE,
+                frame_mod.ColorEnum.ORANGE,
+                frame_mod.ColorEnum.GREEN,
+                frame_mod.ColorEnum.BLUE,
+                frame_mod.ColorEnum.ORANGE,
+                frame_mod.ColorEnum.GREEN,
+                frame_mod.ColorEnum.BLUE,
+                frame_mod.ColorEnum.ORANGE,
+                frame_mod.ColorEnum.GREEN,
+                frame_mod.ColorEnum.BLUE,
+                frame_mod.ColorEnum.ORANGE,
+                frame_mod.ColorEnum.GREEN,
+                frame_mod.ColorEnum.BLUE,
+                frame_mod.ColorEnum.ORANGE,
+                frame_mod.ColorEnum.GREEN,
+                frame_mod.ColorEnum.BLUE,
+                frame_mod.ColorEnum.ORANGE,
+                frame_mod.ColorEnum.GREEN,
+                frame_mod.ColorEnum.BLUE,
+                frame_mod.ColorEnum.ORANGE,
+                frame_mod.ColorEnum.GREEN,
+                frame_mod.ColorEnum.BLUE,
+                frame_mod.ColorEnum.ORANGE,
+                frame_mod.ColorEnum.GREEN,
+            ],
+        )
+
+    def test_match(self) -> None:
+        self.assertTrue(isinstance(self.frame, frame_mod.DayColorHighlight))
+
+
 # TODO StartEndTime
 # TODO Illustration
 # TODO Text
