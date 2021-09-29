@@ -1,1 +1,2 @@
 .mypy-cache
+**/__pycache__/
