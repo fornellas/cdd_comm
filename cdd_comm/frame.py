@@ -112,7 +112,7 @@ class Directory(Frame):
     LENGTH: ClassVar[int] = 0x2
     TYPE: ClassVar[int] = 0x0
     ADDRESS: ClassVar[int] = 0x200
-    DATA: ClassVar[List[int]]
+    DATA: ClassVar[List[int]] = [0, 0]
 
     @classmethod
     def match(cls, length: int, frame_type: int, address: int, data: List[int]) -> bool:
