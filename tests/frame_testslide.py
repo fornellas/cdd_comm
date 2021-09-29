@@ -1,5 +1,5 @@
 import datetime
-from typing import Type
+from typing import Type, cast
 
 from testslide import TestCase
 
@@ -171,120 +171,66 @@ class DateTest(TestCase):
     TYPE: int = frame_mod.Date.TYPE
     ADDRESS: int = frame_mod.Date.ADDRESS
 
-    def test_year(self):
-        self.assertEqual(
+    def _get_date(self, date_str: str) -> frame_mod.Date:
+        return cast(
+            frame_mod.Date,
             frame_mod.Frame.from_data(
                 length=self.LENGTH,
                 frame_type=self.TYPE,
                 address=self.ADDRESS,
-                data=[ord(c) for c in "----------"],
+                data=[ord(c) for c in date_str],
                 checksum=0,
-            ).year,
+            ),
+        )
+
+    def test_year(self) -> None:
+        self.assertEqual(
+            self._get_date("----------").year,
             None,
         )
         self.assertEqual(
-            frame_mod.Frame.from_data(
-                length=self.LENGTH,
-                frame_type=self.TYPE,
-                address=self.ADDRESS,
-                data=[ord(c) for c in "2021------"],
-                checksum=0,
-            ).year,
+            self._get_date("2021------").year,
             2021,
         )
 
-    def test_month(self):
+    def test_month(self) -> None:
         self.assertEqual(
-            frame_mod.Frame.from_data(
-                length=self.LENGTH,
-                frame_type=self.TYPE,
-                address=self.ADDRESS,
-                data=[ord(c) for c in "2021------"],
-                checksum=0,
-            ).month,
+            self._get_date("2021------").month,
             None,
         )
         self.assertEqual(
-            frame_mod.Frame.from_data(
-                length=self.LENGTH,
-                frame_type=self.TYPE,
-                address=self.ADDRESS,
-                data=[ord(c) for c in "2021-03---"],
-                checksum=0,
-            ).month,
+            self._get_date("2021-03---").month,
             3,
         )
 
-    def test_day(self):
+    def test_day(self) -> None:
         self.assertEqual(
-            frame_mod.Frame.from_data(
-                length=self.LENGTH,
-                frame_type=self.TYPE,
-                address=self.ADDRESS,
-                data=[ord(c) for c in "2021-03---"],
-                checksum=0,
-            ).day,
+            self._get_date("2021-03---").day,
             None,
         )
         self.assertEqual(
-            frame_mod.Frame.from_data(
-                length=self.LENGTH,
-                frame_type=self.TYPE,
-                address=self.ADDRESS,
-                data=[ord(c) for c in "2021-03-29"],
-                checksum=0,
-            ).day,
+            self._get_date("2021-03-29").day,
             29,
         )
 
-    def test_date(self):
-        frame = frame_mod.Frame.from_data(
-            length=self.LENGTH,
-            frame_type=self.TYPE,
-            address=self.ADDRESS,
-            data=[ord(c) for c in "----------"],
-            checksum=0,
-        )
+    def test_date(self) -> None:
+        frame = self._get_date("----------")
         with self.assertRaises(RuntimeError):
             frame.date
 
-        frame = frame_mod.Frame.from_data(
-            length=self.LENGTH,
-            frame_type=self.TYPE,
-            address=self.ADDRESS,
-            data=[ord(c) for c in "2021------"],
-            checksum=0,
-        )
+        frame = self._get_date("2021------")
         with self.assertRaises(RuntimeError):
             frame.date
 
-        frame = frame_mod.Frame.from_data(
-            length=self.LENGTH,
-            frame_type=self.TYPE,
-            address=self.ADDRESS,
-            data=[ord(c) for c in "2021-03---"],
-            checksum=0,
-        )
+        frame = self._get_date("2021-03---")
         with self.assertRaises(RuntimeError):
             frame.date
 
-        frame = frame_mod.Frame.from_data(
-            length=self.LENGTH,
-            frame_type=self.TYPE,
-            address=self.ADDRESS,
-            data=[ord(c) for c in "2021-03-29"],
-            checksum=0,
-        )
+        frame = self._get_date("2021-03-29")
         self.assertEqual(frame.date, datetime.date(2021, 3, 29))
 
     def test_match(self) -> None:
-        frame = frame_mod.Frame.from_data(
-            length=self.LENGTH,
-            frame_type=self.TYPE,
-            address=self.ADDRESS,
-            data=[ord(c) for c in "----------"],
-            checksum=0,
-        )
+        frame = self._get_date("----------")
         self.assertTrue(isinstance(frame, frame_mod.Date))
 
 
