@@ -30,7 +30,7 @@ _FRAME_TYPE_DESC: Dict[str, str] = {
     for frame_class in frame.Frame.SUBCLASSES + [frame.Frame]
 }
 
-_ANNOTATIONS = [
+_ANNOTATIONS = (
     ("sync", "Sync"),
     ("frame-start", "Frame Start"),
     ("frame-header", "Frame Header"),
@@ -48,7 +48,7 @@ _ANNOTATIONS = [
     ("receiver-ack", "Receiver ACK"),
     ("receiver-nack", "Receiver NACK"),
     ("receiver-warning", "Receiver Warning"),
-]
+)
 
 
 class Decoder(sigrokdecode.Decoder):
@@ -80,7 +80,7 @@ class Decoder(sigrokdecode.Decoder):
             "values": ("TX", "RX"),
         },
     )
-    annotations: List[Tuple[str, str]] = _ANNOTATIONS
+    annotations: Tuple[Tuple[str, str], ...] = _ANNOTATIONS
     annotation_rows = (
         (
             "sender",
@@ -133,7 +133,7 @@ class Decoder(sigrokdecode.Decoder):
             (_get_annotation_index(annotations, "receiver-warning"),),
         ),
     )
-    binary: List[Tuple[str, str]] = []
+    binary: Tuple[Tuple[str, str], ...] = tuple()
     tags = ["PC"]
 
     _record_state: str
