@@ -34,12 +34,12 @@ class Telephone(Record):
     name: str
     number: Optional[str]
     address: Optional[str]
-    free1: Optional[str]
-    free2: Optional[str]
-    free3: Optional[str]
-    free4: Optional[str]
-    free5: Optional[str]
-    free6: Optional[str]
+    field1: Optional[str]
+    field2: Optional[str]
+    field3: Optional[str]
+    field4: Optional[str]
+    field5: Optional[str]
+    field6: Optional[str]
 
     DIRECTORY: ClassVar[Type[frame.Directory]] = frame.TelephoneDirectory
 
@@ -48,9 +48,24 @@ class Telephone(Record):
     @property
     def memo(self) -> Optional[str]:
         """
-        CCS-8950's free1
+        CCS-8950 amalgamates various fields at a single "memo" field.
         """
-        return self.free1
+        field_str: List[str] = []
+
+        if self.field1:
+            field_str.append(self.field1)
+        if self.field2:
+            field_str.append(self.field2)
+        if self.field3:
+            field_str.append(self.field3)
+        if self.field4:
+            field_str.append(self.field4)
+        if self.field5:
+            field_str.append(self.field5)
+        if self.field6:
+            field_str.append(self.field6)
+
+        return "\n".join(field_str)
 
     def __str__(self) -> str:
         info_str = f"Telephone: {self.name}"
@@ -58,18 +73,18 @@ class Telephone(Record):
             info_str += f", {self.number}"
         if self.address is not None:
             info_str += f", {self.address}"
-        if self.free1 is not None:
-            info_str += f", {self.free1}"
-        if self.free2 is not None:
-            info_str += f", {self.free2}"
-        if self.free3 is not None:
-            info_str += f", {self.free3}"
-        if self.free4 is not None:
-            info_str += f", {self.free4}"
-        if self.free5 is not None:
-            info_str += f", {self.free5}"
-        if self.free6 is not None:
-            info_str += f", {self.free6}"
+        if self.field1 is not None:
+            info_str += f", {self.field1}"
+        if self.field2 is not None:
+            info_str += f", {self.field2}"
+        if self.field3 is not None:
+            info_str += f", {self.field3}"
+        if self.field4 is not None:
+            info_str += f", {self.field4}"
+        if self.field5 is not None:
+            info_str += f", {self.field5}"
+        if self.field6 is not None:
+            info_str += f", {self.field6}"
         info_str += f" ({self.color})"
         return info_str
 
@@ -98,26 +113,26 @@ class Telephone(Record):
         address = None
         if len(fields) > 2:
             address = fields[2]
-        free1 = None
+        field1 = None
         if len(fields) > 3:
-            free1 = fields[3]
-        free2 = None
+            field1 = fields[3]
+        field2 = None
         if len(fields) > 4:
-            free2 = fields[4]
-        free3 = None
+            field2 = fields[4]
+        field3 = None
         if len(fields) > 5:
-            free3 = fields[5]
-        free4 = None
+            field3 = fields[5]
+        field4 = None
         if len(fields) > 6:
-            free4 = fields[6]
-        free5 = None
+            field4 = fields[6]
+        field5 = None
         if len(fields) > 7:
-            free5 = fields[7]
-        free6 = None
+            field5 = fields[7]
+        field6 = None
         if len(fields) > 8:
-            free6 = fields[8]
+            field6 = fields[8]
         return cls(
-            color, name, number, address, free1, free2, free3, free4, free5, free6
+            color, name, number, address, field1, field2, field3, field4, field5, field6
         )
 
     def to_frames(self) -> List[frame.Frame]:
@@ -126,18 +141,18 @@ class Telephone(Record):
             text_list.append(self.number)
         if self.address is not None:
             text_list.append(self.address)
-        if self.free1 is not None:
-            text_list.append(self.free1)
-        if self.free2 is not None:
-            text_list.append(self.free2)
-        if self.free3 is not None:
-            text_list.append(self.free3)
-        if self.free4 is not None:
-            text_list.append(self.free4)
-        if self.free5 is not None:
-            text_list.append(self.free5)
-        if self.free6 is not None:
-            text_list.append(self.free6)
+        if self.field1 is not None:
+            text_list.append(self.field1)
+        if self.field2 is not None:
+            text_list.append(self.field2)
+        if self.field3 is not None:
+            text_list.append(self.field3)
+        if self.field4 is not None:
+            text_list.append(self.field4)
+        if self.field5 is not None:
+            text_list.append(self.field5)
+        if self.field6 is not None:
+            text_list.append(self.field6)
         if self.color:
             return [
                 frame.Color.from_color_enum(self.color),

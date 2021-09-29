@@ -329,3 +329,13 @@ class PriorityTest(TestCase):
         self.assertTrue(
             isinstance(self._get_priority(frame_mod.PriorityEnum.A), frame_mod.Priority)
         )
+
+
+# TODO DatesHighlight
+# TODO DateColorHighlight
+# TODO StartEndTime
+# TODO Illustration
+# TODO Text
+# TODO EndOfRecord
+# TODO EndOfTransmission
+# TODO FrameBuilder
