@@ -11,10 +11,10 @@ class Record(ABC):
 
     DIRECTORY: ClassVar[Type[frame.Directory]]
 
-    DIRECTORY_TO_RECORD: Dict[Type[frame.Directory], "Record"] = {}
+    DIRECTORY_TO_RECORD: Dict[Type[frame.Directory], Type["Record"]] = {}
 
-    def __init_subclass__(cls, *args, **kwargs):
-        super().__init_subclass__(*args, **kwargs)
+    def __init_subclass__(cls) -> None:
+        super().__init_subclass__()
         cls.DIRECTORY_TO_RECORD[cls.DIRECTORY] = cls
 
     @classmethod

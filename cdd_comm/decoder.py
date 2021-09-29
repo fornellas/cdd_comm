@@ -14,7 +14,7 @@ except ModuleNotFoundError:
 
     sigrokdecode.Decoder = FakeDecoder
 from dataclasses import dataclass
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Tuple, Union, ClassVar, cast
 from . import frame
 from . import record
 import re
@@ -32,7 +32,7 @@ _FRAME_TYPE_DESC: Dict[str, str] = {
     for frame_class in frame.Frame.SUBCLASSES + [frame.Frame]
 }
 
-_ANNOTATIONS = (
+_ANNOTATIONS = [
     ("sync", "Sync"),
     ("frame-start", "Frame Start"),
     ("frame-header", "Frame Header"),
@@ -50,7 +50,7 @@ _ANNOTATIONS = (
     ("receiver-ack", "Receiver ACK"),
     ("receiver-nack", "Receiver NACK"),
     ("receiver-warning", "Receiver Warning"),
-)
+]
 
 
 class Decoder(sigrokdecode.Decoder):
@@ -61,10 +61,14 @@ class Decoder(sigrokdecode.Decoder):
     desc = "Casio Digital Diary serial communication protocol"
     license = "gplv2+"
     inputs = ["uart"]
-    outputs = []
-    channels = tuple()
-    optional_channels = tuple()
-    options = (
+    outputs: List[str] = []
+    channels: Tuple[Dict[str, str], ...] = tuple()
+    optional_channels: Tuple[Dict[str, str], ...] = tuple()
+    # Typing here is messed up: The class variable is a Tuple, but when decode()
+    # is called, the value changes to a Dict Oo
+    options: Union[
+        Tuple[Dict[str, Union[str, Tuple[str, ...]]], ...], Dict[str, str]
+    ] = (
         {
             "id": "sender",
             "desc": "Sender of data",
@@ -78,7 +82,7 @@ class Decoder(sigrokdecode.Decoder):
             "values": ("TX", "RX"),
         },
     )
-    annotations = _ANNOTATIONS
+    annotations: List[Tuple[str, str]] = _ANNOTATIONS
     annotation_rows = (
         (
             "sender",
@@ -131,7 +135,7 @@ class Decoder(sigrokdecode.Decoder):
             (_get_annotation_index(annotations, "receiver-warning"),),
         ),
     )
-    binary = tuple()
+    binary: List[Tuple[str, str]] = []
     tags = ["PC"]
 
     _record_state: str
@@ -416,6 +420,9 @@ class Decoder(sigrokdecode.Decoder):
         libsigrokdecode backend whenever it has a chunk of data for the protocol
         decoder to handle.
         """
+
+        self.options = cast(Dict[str, str], self.options)
+
         ptype, rxtx, pdata = data
 
         if ptype != "DATA":
