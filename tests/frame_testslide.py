@@ -1,10 +1,12 @@
+from typing import Type
+
 from testslide import TestCase
 
 import cdd_comm.frame as frame_mod
 
 
 class FrameTest(TestCase):
-    def test_get_kebab_case_description(self):
+    def test_get_kebab_case_description(self) -> None:
         self.assertEqual(
             frame_mod.Frame(
                 length=0, type=1, address=2, data=[], checksum=0
@@ -12,7 +14,7 @@ class FrameTest(TestCase):
             "frame",
         )
 
-    def test_eq(self):
+    def test_eq(self) -> None:
         self.assertTrue(
             frame_mod.Frame(length=0, type=1, address=2, data=[], checksum=0)
             == frame_mod.Frame(length=0, type=1, address=2, data=[], checksum=0)
@@ -38,7 +40,7 @@ class FrameTest(TestCase):
             == frame_mod.Frame(length=0, type=1, address=2, data=[], checksum=1)
         )
 
-    def test_calculate_checksum(self):
+    def test_calculate_checksum(self) -> None:
         self.assertEqual(
             frame_mod.Frame.calculate_checksum(
                 length=3, frame_type=244, address=134, data=[0, 1, 2]
@@ -52,7 +54,7 @@ class FrameTest(TestCase):
             116,
         )
 
-    def test_is_checksum_valid(self):
+    def test_is_checksum_valid(self) -> None:
         self.assertTrue(
             frame_mod.Frame(
                 length=3, type=244, address=134, data=[0, 1, 2], checksum=128
@@ -64,7 +66,7 @@ class FrameTest(TestCase):
             ).is_checksum_valid()
         )
 
-    def test_bytes(self):
+    def test_bytes(self) -> None:
         self.assertEqual(
             frame_mod.Frame(
                 length=3, type=244, address=134, data=[0, 1, 2], checksum=128
@@ -78,7 +80,20 @@ class FrameTest(TestCase):
             b":03EA370000010222",
         )
 
-    def test_from_data(self):
+    def test_match(self) -> None:
+        frame = frame_mod.Frame(
+            length=3, type=234, address=55, data=[0, 1, 2], checksum=34
+        )
+        self.assertFalse(
+            frame.match(length=3, frame_type=234, address=55, data=[0, 1, 2])
+        )
+        self.assertFalse(
+            frame.match(length=3, frame_type=232, address=55, data=[0, 1, 2])
+        )
+
+
+class DirectoryTest(TestCase):
+    def test_directory(self) -> None:
         self.assertTrue(
             type(
                 frame_mod.Frame.from_data(
@@ -91,15 +106,60 @@ class FrameTest(TestCase):
             )
             == frame_mod.Directory
         )
+
+    def assert_match(self, directory_class: Type[frame_mod.Directory]) -> None:
         self.assertTrue(
             type(
                 frame_mod.Frame.from_data(
                     length=frame_mod.Directory.LENGTH,
                     frame_type=frame_mod.Directory.TYPE,
                     address=frame_mod.Directory.ADDRESS,
-                    data=frame_mod.TelephoneDirectory.DATA,
+                    data=directory_class.DATA,
                     checksum=0,
                 )
             )
-            == frame_mod.TelephoneDirectory
+            == directory_class
         )
+
+    def test_TelephoneDirectory_match(self) -> None:
+        self.assert_match(frame_mod.TelephoneDirectory)
+
+    def test_BusinessCardDirectory_match(self) -> None:
+        self.assert_match(frame_mod.BusinessCardDirectory)
+
+    def test_MemoDirectory_match(self) -> None:
+        self.assert_match(frame_mod.MemoDirectory)
+
+    def test_CalendarDirectory_match(self) -> None:
+        self.assert_match(frame_mod.CalendarDirectory)
+
+    def test_ScheduleKeeperDirectory_match(self) -> None:
+        self.assert_match(frame_mod.ScheduleKeeperDirectory)
+
+    def test_ReminderDirectory_match(self) -> None:
+        self.assert_match(frame_mod.ReminderDirectory)
+
+    def test_ToDoDirectory_match(self) -> None:
+        self.assert_match(frame_mod.ToDoDirectory)
+
+    def test_ExpenseManagerDirectory_match(self) -> None:
+        self.assert_match(frame_mod.ExpenseManagerDirectory)
+
+
+class TestColor(TestCase):
+    def test_from_color_enum(self) -> None:
+        for color_enum in list(frame_mod.ColorEnum):
+            frame = frame_mod.Color.from_color_enum(color_enum)
+            self.assertEqual(frame.enum, color_enum)
+            self.assertEqual(frame.name, color_enum.name)
+
+    def test_match(self) -> None:
+        for color_enum in list(frame_mod.ColorEnum):
+            frame = frame_mod.Frame.from_data(
+                length=frame_mod.Color.LENGTH,
+                frame_type=frame_mod.Color.TYPE,
+                address=frame_mod.Color.ADDRESS,
+                data=[color_enum.value],
+                checksum=0,
+            )
+            self.assertTrue(isinstance(frame, frame_mod.Color))
