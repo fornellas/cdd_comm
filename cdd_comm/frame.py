@@ -192,9 +192,9 @@ class ColorEnum(Enum):
 
 class Color(Frame):
     DESCRIPTION: ClassVar[str] = "Color"
-    LENGTH: int = 0x1
-    TYPE: int = 0x71
-    ADDRESS: int = 0x0
+    LENGTH: ClassVar[int] = 0x1
+    TYPE: ClassVar[int] = 0x71
+    ADDRESS: ClassVar[int] = 0x0
     _CODE_TO_COLOR: Dict[int, ColorEnum] = {
         color.value: color for color in list(ColorEnum)
     }
@@ -440,9 +440,9 @@ class TextDataFrame(Frame, ABC):
 
 class Date(TextDataFrame):
     DESCRIPTION: ClassVar[str] = "Date"
-    LENGTH: int = 0xA
-    TYPE: int = 0xF0
-    ADDRESS: int = 0x0
+    LENGTH: ClassVar[int] = 0xA
+    TYPE: ClassVar[int] = 0xF0
+    ADDRESS: ClassVar[int] = 0x0
 
     def _get_date(self) -> Tuple[Optional[int], Optional[int], Optional[int]]:
         year: Optional[int]
@@ -508,11 +508,11 @@ class DeadlineDate(Date):
         return False
 
 
-class DeadlineTime(TextDataFrame):
-    DESCRIPTION: ClassVar[str] = "Deadline Time"
-    LENGTH: int = 0x5
-    TYPE: int = 0xE4
-    ADDRESS: int = 0x0
+class Time(TextDataFrame):
+    DESCRIPTION: ClassVar[str] = "Time"
+    LENGTH: ClassVar[int] = 0x5
+    TYPE: ClassVar[int] = 0xE0
+    ADDRESS: ClassVar[int] = 0x0
 
     @property
     def time(self) -> datetime.time:
@@ -526,6 +526,21 @@ class DeadlineTime(TextDataFrame):
         return False
 
 
+class DeadlineTime(Time):
+    DESCRIPTION: ClassVar[str] = "Deadline Time"
+    TYPE: ClassVar[int] = 0xE4
+
+
+class ToDoAlarm(Time):
+    DESCRIPTION: ClassVar[str] = "To Do Alarm"
+    TYPE: ClassVar[int] = 0xC4
+
+
+class Alarm(Time):
+    DESCRIPTION: ClassVar[str] = "Alarm"
+    TYPE: ClassVar[int] = 0xC0
+
+
 class PriorityEnum(Enum):
     A: int = 0x10
     B: int = 0x20
@@ -534,9 +549,9 @@ class PriorityEnum(Enum):
 
 class Priority(Frame):
     DESCRIPTION: ClassVar[str] = "Priority"
-    LENGTH: int = 0x1
-    TYPE: int = 0x72
-    ADDRESS: int = 0x0
+    LENGTH: ClassVar[int] = 0x1
+    TYPE: ClassVar[int] = 0x72
+    ADDRESS: ClassVar[int] = 0x0
     _CODE_TO_PRIORITY: Dict[int, PriorityEnum] = {
         priority.value: priority for priority in list(PriorityEnum)
     }
@@ -581,21 +596,6 @@ class Priority(Frame):
 
     def __str__(self) -> str:
         return f"{self.DESCRIPTION}: {self.enum.name}"
-
-
-class ToDoAlarm(TextDataFrame):
-    DESCRIPTION: ClassVar[str] = "To Do Alarm"
-
-    @property
-    def time(self) -> datetime.time:
-        hour_str, minute_str = self.text.split(":")
-        return datetime.time(int(hour_str), int(minute_str))
-
-    @classmethod
-    def match(cls, length: int, frame_type: int, address: int, data: List[int]) -> bool:
-        if length == 0x5 and frame_type == 0xC4 and address == 0x0:
-            return True
-        return False
 
 
 class DatesHighlight(Frame):
@@ -679,21 +679,22 @@ class DateColorHighlight(Frame):
         return f"{self.DESCRIPTION}: " + " ".join(info_list)
 
 
-class Time(TextDataFrame):
-    DESCRIPTION: ClassVar[str] = "Time"
+class StartEndTime(TextDataFrame):
+    DESCRIPTION: ClassVar[str] = "StartEndTime"
+    LENGTH: ClassVar[int] = 0xB
+    TYPE: ClassVar[int] = 0xE0
+    ADDRESS: ClassVar[int] = 0x0
 
     def _get_start_end_times(self) -> Tuple[datetime.time, Optional[datetime.time]]:
         time_str_list = self.text.split("~")
 
         hour, minute = [int(v) for v in time_str_list[0].split(":")]
         start_time = datetime.time(hour, minute)
-        end_time: Optional[datetime.time]
 
-        if len(time_str_list) > 1:
-            hour, minute = [int(v) for v in time_str_list[1].split(":")]
-            end_time = datetime.time(hour, minute)
-        else:
-            end_time = None
+        end_time: Optional[datetime.time]
+        hour, minute = [int(v) for v in time_str_list[1].split(":")]
+        end_time = datetime.time(hour, minute)
+
         return (start_time, end_time)
 
     @property
@@ -701,31 +702,12 @@ class Time(TextDataFrame):
         return self._get_start_end_times()[0]
 
     @property
-    def time(self) -> datetime.time:
-        return self.start_time
-
-    @property
     def end_time(self) -> Optional[datetime.time]:
         return self._get_start_end_times()[1]
 
     @classmethod
     def match(cls, length: int, frame_type: int, address: int, data: List[int]) -> bool:
-        if length in [0xB, 0x5] and frame_type == 0xE0 and address == 0x0:
-            return True
-        return False
-
-
-class Alarm(TextDataFrame):
-    DESCRIPTION: ClassVar[str] = "Alarm"
-
-    @property
-    def time(self) -> datetime.time:
-        hour, minute = [int(v) for v in self.text.split(":")]
-        return datetime.time(hour, minute)
-
-    @classmethod
-    def match(cls, length: int, frame_type: int, address: int, data: List[int]) -> bool:
-        if length == 0x5 and frame_type == 0xC0 and address == 0x0:
+        if length == cls.LENGTH and frame_type == cls.TYPE and address == cls.ADDRESS:
             return True
         return False
 
@@ -796,9 +778,9 @@ class Text(TextDataFrame):
 
 class EndOfRecord(Frame):
     DESCRIPTION: ClassVar[str] = "End Of Record"
-    LENGTH: int = 0x0
-    TYPE: int = 0x0
-    ADDRESS: int = 0x100
+    LENGTH: ClassVar[int] = 0x0
+    TYPE: ClassVar[int] = 0x0
+    ADDRESS: ClassVar[int] = 0x100
     DATA: List[int] = []
 
     @classmethod
@@ -823,9 +805,9 @@ class EndOfRecord(Frame):
 
 class EndOfTransmission(Frame):
     DESCRIPTION: ClassVar[str] = "End Of Transmission"
-    LENGTH: int = 0x0
-    TYPE: int = 0x0
-    ADDRESS: int = 0xFF00
+    LENGTH: ClassVar[int] = 0x0
+    TYPE: ClassVar[int] = 0x0
+    ADDRESS: ClassVar[int] = 0xFF00
     DATA: List[int] = []
 
     @classmethod

@@ -1,5 +1,5 @@
 import datetime
-from typing import Type, cast
+from typing import ClassVar, Type, cast
 
 from testslide import TestCase
 
@@ -167,9 +167,9 @@ class ColorTest(TestCase):
 
 
 class DateTest(TestCase):
-    LENGTH: int = frame_mod.Date.LENGTH
-    TYPE: int = frame_mod.Date.TYPE
-    ADDRESS: int = frame_mod.Date.ADDRESS
+    LENGTH: ClassVar[int] = frame_mod.Date.LENGTH
+    TYPE: ClassVar[int] = frame_mod.Date.TYPE
+    ADDRESS: ClassVar[int] = frame_mod.Date.ADDRESS
 
     def _get_date(self, date_str: str) -> frame_mod.Date:
         return cast(
@@ -235,33 +235,54 @@ class DateTest(TestCase):
 
 
 class DeadlineDateTest(DateTest):
-    LENGTH: int = frame_mod.DeadlineDate.LENGTH
-    TYPE: int = frame_mod.DeadlineDate.TYPE
-    ADDRESS: int = frame_mod.DeadlineDate.ADDRESS
+    LENGTH: ClassVar[int] = frame_mod.DeadlineDate.LENGTH
+    TYPE: ClassVar[int] = frame_mod.DeadlineDate.TYPE
+    ADDRESS: ClassVar[int] = frame_mod.DeadlineDate.ADDRESS
 
 
-class DeadlineTimeTest(TestCase):
-    def test_time(self):
+class Time(TestCase):
+    TIME_CLASS: ClassVar[Type[frame_mod.Time]] = frame_mod.Time
+    TYPE: ClassVar[int] = frame_mod.Time.TYPE
+
+    def test_time(self) -> None:
         self.assertEqual(
-            frame_mod.Frame.from_data(
-                length=frame_mod.DeadlineTime.LENGTH,
-                frame_type=frame_mod.DeadlineTime.TYPE,
-                address=frame_mod.DeadlineTime.ADDRESS,
-                data=[ord(c) for c in "22:33"],
-                checksum=0,
+            cast(
+                frame_mod.Time,
+                frame_mod.Frame.from_data(
+                    length=frame_mod.Time.LENGTH,
+                    frame_type=self.TYPE,
+                    address=frame_mod.Time.ADDRESS,
+                    data=[ord(c) for c in "22:33"],
+                    checksum=0,
+                ),
             ).time,
             datetime.time(22, 33),
         )
 
     def test_match(self) -> None:
         frame = frame_mod.Frame.from_data(
-            length=frame_mod.DeadlineTime.LENGTH,
-            frame_type=frame_mod.DeadlineTime.TYPE,
-            address=frame_mod.DeadlineTime.ADDRESS,
+            length=frame_mod.Time.LENGTH,
+            frame_type=self.TYPE,
+            address=frame_mod.Time.ADDRESS,
             data=[ord(c) for c in "22:33"],
             checksum=0,
         )
-        self.assertTrue(isinstance(frame, frame_mod.DeadlineTime))
+        self.assertTrue(isinstance(frame, self.TIME_CLASS))
+
+
+class DeadlineTimeTest(Time):
+    TIME_CLASS: ClassVar[Type[frame_mod.Time]] = frame_mod.DeadlineTime
+    TYPE: ClassVar[int] = frame_mod.DeadlineTime.TYPE
+
+
+class ToDoAlarmTest(Time):
+    TIME_CLASS: ClassVar[Type[frame_mod.Time]] = frame_mod.ToDoAlarm
+    TYPE: ClassVar[int] = frame_mod.ToDoAlarm.TYPE
+
+
+class AlarmTest(Time):
+    TIME_CLASS: ClassVar[Type[frame_mod.Time]] = frame_mod.Alarm
+    TYPE: ClassVar[int] = frame_mod.Alarm.TYPE
 
 
 class PriorityTest(TestCase):

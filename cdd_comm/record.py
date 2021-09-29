@@ -349,7 +349,7 @@ class ScheduleKeeper(Record):
                 color = f.name
             elif isinstance(f, frame.Date):
                 date = f.date
-            elif isinstance(f, frame.Time):
+            elif isinstance(f, frame.StartEndTime):
                 start_time = f.start_time
                 end_time = f.end_time
             elif isinstance(f, frame.Alarm):
