@@ -282,7 +282,7 @@ class Memo(Record):
 class Calendar(Record):
     year: int
     month: int
-    highlighted_dates: Set[int]
+    highlighted_days: Set[int]
     date_colors: Optional[List[frame.ColorEnum]]
 
     DIRECTORY: ClassVar[Type[frame.Directory]] = frame.CalendarDirectory
@@ -295,7 +295,7 @@ class Calendar(Record):
             color = ""
             if self.date_colors:
                 color = self.date_colors[date - 1].name[0].lower()
-            highlight = "*" if date in self.highlighted_dates else ""
+            highlight = "*" if date in self.highlighted_days else ""
             info_list.append(f"{date}{color}{highlight}")
         return f"{self.DESCRIPTION}: " + " ".join(info_list)
 
@@ -303,7 +303,7 @@ class Calendar(Record):
     def from_frames(cls, frames: List[frame.Frame]) -> "Calendar":
         year: int = 0
         month: int = 0
-        highlighted_dates: Set[int] = set()
+        highlighted_days: Set[int] = set()
         date_colors: Optional[List[frame.ColorEnum]] = None
         for f in frames:
             if isinstance(f, frame.Date):
@@ -313,20 +313,20 @@ class Calendar(Record):
                 if f.month is None:
                     raise ValueError("Missing month")
                 month = f.month
-            elif isinstance(f, frame.DatesHighlight):
-                for date in f.dates:
-                    highlighted_dates.add(date)
-            elif isinstance(f, frame.DateColorHighlight):
-                for date in f.highlighted_dates:
-                    highlighted_dates.add(date)
-                date_colors = f.date_colors
+            elif isinstance(f, frame.DayHighlight):
+                for day in f.days:
+                    highlighted_days.add(day)
+            elif isinstance(f, frame.DayColorHighlight):
+                for date in f.highlighted_days:
+                    highlighted_days.add(date)
+                date_colors = f.day_colors
             else:
                 raise ValueError(f"Unknown frame type: {type(f)}")
 
         if year == 0 or month == 0:
             raise ValueError("Missing Date frame")
 
-        return cls(year, month, highlighted_dates, date_colors)
+        return cls(year, month, highlighted_days, date_colors)
 
     def to_frames(self) -> List[frame.Frame]:
         raise NotImplementedError

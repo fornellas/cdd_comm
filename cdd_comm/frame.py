@@ -598,8 +598,8 @@ class Priority(Frame):
         return f"{self.DESCRIPTION}: {self.enum.name}"
 
 
-class DatesHighlight(Frame):
-    DESCRIPTION: ClassVar[str] = "Dates Highlight"
+class DayHighlight(Frame):
+    DESCRIPTION: ClassVar[str] = "Day Highlight"
 
     @classmethod
     def match(cls, length: int, frame_type: int, address: int, data: List[int]) -> bool:
@@ -608,22 +608,20 @@ class DatesHighlight(Frame):
         return False
 
     @property
-    def dates(self) -> Set[int]:
-        dates: List[int] = []
+    def days(self) -> Set[int]:
+        days: List[int] = []
         for idx, data in enumerate(self.data):
             for bit in range(8):
                 if data & (1 << bit):
-                    dates.append((3 - idx) * 8 + bit + 1)
-        return set(dates)
+                    days.append((3 - idx) * 8 + bit + 1)
+        return set(days)
 
     def __str__(self) -> str:
-        return f"{self.DESCRIPTION}: " + " ".join(
-            str(day) for day in sorted(self.dates)
-        )
+        return f"{self.DESCRIPTION}: " + " ".join(str(day) for day in sorted(self.days))
 
 
-class DateColorHighlight(Frame):
-    DESCRIPTION: ClassVar[str] = "Date Color & Highlight"
+class DayColorHighlight(Frame):
+    DESCRIPTION: ClassVar[str] = "Day Color & Highlight"
 
     @classmethod
     def match(cls, length: int, frame_type: int, address: int, data: List[int]) -> bool:
@@ -631,7 +629,7 @@ class DateColorHighlight(Frame):
             return True
         return False
 
-    def _get_date_color_highlight(self) -> List[Tuple[ColorEnum, bool]]:
+    def _get_day_color_highlight(self) -> List[Tuple[ColorEnum, bool]]:
         color_highlight: List[Tuple[ColorEnum, bool]] = []
         for info in reversed(self.data):
             color_enum: ColorEnum
@@ -646,9 +644,9 @@ class DateColorHighlight(Frame):
         return color_highlight
 
     @property
-    def highlighted_dates(self) -> Set[int]:
+    def highlighted_days(self) -> Set[int]:
         highlighted_dates: Set[int] = set()
-        for idx, value in enumerate(self._get_date_color_highlight()):
+        for idx, value in enumerate(self._get_day_color_highlight()):
             _color, highlight = value
             date = idx + 1
             if date > 31:
@@ -658,19 +656,19 @@ class DateColorHighlight(Frame):
         return highlighted_dates
 
     @property
-    def date_colors(self) -> List[ColorEnum]:
-        date_colors: List[ColorEnum] = []
-        for idx, value in enumerate(self._get_date_color_highlight()):
+    def day_colors(self) -> List[ColorEnum]:
+        day_colors: List[ColorEnum] = []
+        for idx, value in enumerate(self._get_day_color_highlight()):
             color, _highlight = value
             date = idx + 1
             if date > 31:
                 continue
-            date_colors.append(color)
-        return date_colors
+            day_colors.append(color)
+        return day_colors
 
     def __str__(self) -> str:
         info_list = []
-        for idx, value in enumerate(self._get_date_color_highlight()):
+        for idx, value in enumerate(self._get_day_color_highlight()):
             color, highlight = value
             date = idx + 1
             if date > 31:
