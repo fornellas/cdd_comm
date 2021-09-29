@@ -1,6 +1,7 @@
 import datetime
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
+from enum import Enum
 from typing import ClassVar, Dict, List, Optional, Set, Tuple, Type
 
 ##
@@ -183,27 +184,35 @@ class ExpenseManagerDirectory(Directory):
 # Others
 
 
+class ColorEnum(Enum):
+    BLUE: int = 0x1
+    ORANGE: int = 0x2
+    GREEN: int = 0x4
+
+
 class Color(Frame):
     DESCRIPTION: ClassVar[str] = "Color"
     LENGTH: int = 0x1
     TYPE: int = 0x71
     ADDRESS: int = 0x0
-    CODE_TO_COLOR: Dict[int, str] = {
-        0x1: "Blue",
-        0x2: "Orange",
-        0x4: "Green",
+    _CODE_TO_COLOR: Dict[int, ColorEnum] = {
+        color.value: color for color in list(ColorEnum)
     }
-    COLOR_TO_CODE: Dict[str, int] = {
-        color: code for code, color in CODE_TO_COLOR.items()
+    _COLOR_TO_CODE: Dict[ColorEnum, int] = {
+        color: code for code, color in _CODE_TO_COLOR.items()
     }
 
     @property
-    def name(self):
-        return self.CODE_TO_COLOR[self.data[0]]
+    def enum(self) -> ColorEnum:
+        return self._CODE_TO_COLOR[self.data[0]]
+
+    @property
+    def name(self) -> str:
+        return self.enum.name
 
     @classmethod
-    def get(cls, color: str) -> "Color":
-        data = [cls.COLOR_TO_CODE[color]]
+    def from_color_enum(cls, color: ColorEnum) -> "Color":
+        data = [cls._COLOR_TO_CODE[color]]
         return cls(
             cls.LENGTH,
             cls.TYPE,
@@ -218,7 +227,7 @@ class Color(Frame):
             length == cls.LENGTH
             and frame_type == cls.TYPE
             and address == cls.ADDRESS
-            and data[0] in cls.CODE_TO_COLOR.keys()
+            and data[0] in cls._CODE_TO_COLOR.keys()
         ):
             return True
         return False
@@ -586,20 +595,18 @@ class DateColorHighlight(Frame):
             return True
         return False
 
-    def _get_date_color_highlight(self) -> List[Tuple[str, bool]]:
-        color_highlight: List[Tuple[str, bool]] = []
+    def _get_date_color_highlight(self) -> List[Tuple[ColorEnum, bool]]:
+        color_highlight: List[Tuple[ColorEnum, bool]] = []
         for info in reversed(self.data):
-            color: str
-            if info & 0x1:
-                color = "Blue"
-            if info & 0x4:
-                color = "Green"
-            if info & 0x2:
-                color = "Orange"
+            color_enum: ColorEnum
+            for color_enum_candidate in list(ColorEnum):
+                if info & color_enum_candidate.value:
+                    color_enum = color_enum_candidate
+                    break
             highlight: bool = False
             if info & 0x80:
                 highlight = True
-            color_highlight.append((color, highlight))
+            color_highlight.append((color_enum, highlight))
         return color_highlight
 
     @property
@@ -615,8 +622,8 @@ class DateColorHighlight(Frame):
         return highlighted_dates
 
     @property
-    def date_colors(self) -> List[str]:
-        date_colors: List[str] = []
+    def date_colors(self) -> List[ColorEnum]:
+        date_colors: List[ColorEnum] = []
         for idx, value in enumerate(self._get_date_color_highlight()):
             color, _highlight = value
             date = idx + 1
@@ -632,7 +639,7 @@ class DateColorHighlight(Frame):
             date = idx + 1
             if date > 31:
                 continue
-            info_list.append(f"{date}{color[0].lower()}{'*' if highlight else ''}")
+            info_list.append(f"{date}{color.name[0].lower()}{'*' if highlight else ''}")
         return f"{self.DESCRIPTION}: " + " ".join(info_list)
 
 

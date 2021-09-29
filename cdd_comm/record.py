@@ -1,7 +1,7 @@
 import datetime
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import ClassVar, Dict, List, Optional, Set, Type
+from typing import ClassVar, Dict, List, Optional, Set, Type, cast
 
 from . import frame
 
@@ -30,7 +30,7 @@ class Record(ABC):
 
 @dataclass
 class Telephone(Record):
-    color: str
+    color: Optional[frame.ColorEnum]
     name: str
     number: Optional[str]
     address: Optional[str]
@@ -76,10 +76,10 @@ class Telephone(Record):
     @classmethod
     def from_frames(cls, frames: List[frame.Frame]) -> "Telephone":
         text = ""
-        color = "Blue"
+        color: Optional[frame.ColorEnum] = None
         for f in frames:
             if isinstance(f, frame.Color):
-                color = f.name
+                color = f.enum
             elif isinstance(f, frame.Text):
                 text += f.text
             else:
@@ -138,12 +138,18 @@ class Telephone(Record):
             text_list.append(self.free5)
         if self.free6 is not None:
             text_list.append(self.free6)
-        return [frame.Color.get(self.color), *frame.Text.from_text_list(text_list)]
+        if self.color:
+            return [
+                frame.Color.from_color_enum(self.color),
+                *frame.Text.from_text_list(text_list),
+            ]
+        else:
+            return cast(List[frame.Frame], frame.Text.from_text_list(text_list))
 
 
 @dataclass
 class BusinessCard(Record):
-    color: str
+    color: Optional[frame.ColorEnum]
     employer: str
     name: str
     telephone_number: Optional[str]
@@ -165,10 +171,10 @@ class BusinessCard(Record):
     @classmethod
     def from_frames(cls, frames: List[frame.Frame]) -> "BusinessCard":
         text = ""
-        color = "Blue"
+        color: Optional[frame.ColorEnum] = None
         for f in frames:
             if isinstance(f, frame.Color):
-                color = f.name
+                color = f.enum
             elif isinstance(f, frame.Text):
                 text += f.text
             else:
@@ -229,7 +235,7 @@ class BusinessCard(Record):
 
 @dataclass
 class Memo(Record):
-    color: str
+    color: Optional[frame.ColorEnum]
     text: str
 
     DIRECTORY: ClassVar[Type[frame.Directory]] = frame.MemoDirectory
@@ -242,10 +248,10 @@ class Memo(Record):
     @classmethod
     def from_frames(cls, frames: List[frame.Frame]) -> "Memo":
         text = ""
-        color = "Blue"
+        color: Optional[frame.ColorEnum] = None
         for f in frames:
             if isinstance(f, frame.Color):
-                color = f.name
+                color = f.enum
             elif isinstance(f, frame.Text):
                 text += f.text
             else:
@@ -262,7 +268,7 @@ class Calendar(Record):
     year: int
     month: int
     highlighted_dates: Set[int]
-    date_colors: Optional[List[str]]
+    date_colors: Optional[List[frame.ColorEnum]]
 
     DIRECTORY: ClassVar[Type[frame.Directory]] = frame.CalendarDirectory
 
@@ -272,8 +278,8 @@ class Calendar(Record):
         info_list = []
         for date in range(1, 32):
             color = ""
-            if self.date_colors is not None:
-                color = self.date_colors[date - 1][0].lower()
+            if self.date_colors:
+                color = self.date_colors[date - 1].name[0].lower()
             highlight = "*" if date in self.highlighted_dates else ""
             info_list.append(f"{date}{color}{highlight}")
         return f"{self.DESCRIPTION}: " + " ".join(info_list)
@@ -283,7 +289,7 @@ class Calendar(Record):
         year: int = 0
         month: int = 0
         highlighted_dates: Set[int] = set()
-        date_colors: Optional[List[str]] = None
+        date_colors: Optional[List[frame.ColorEnum]] = None
         for f in frames:
             if isinstance(f, frame.Date):
                 if f.year is None:
