@@ -115,7 +115,7 @@ coverage-html: coverage-combine
 .PHONY: coverage-clean
 coverage-clean:
 	@printf "${TERM_BRIGHT}COVERAGE CLEAN\n${TERM_NONE}"
-	${Q} rm -rf htmlcov/ .coverage
+	${Q} rm -rf htmlcov/ .coverage .coverage.*
 clean: coverage-clean
 
 # test
