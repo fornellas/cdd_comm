@@ -1,2 +1,4 @@
-.mypy-cache
 **/__pycache__/
+.coverage
+.mypy-cache
+htmlcov/

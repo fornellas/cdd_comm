@@ -1,5 +1,3 @@
-# TODO coverage
-
 TESTSLIDE_FORMAT ?= documentation
 
 TERM_BRIGHT := $(shell tput bold)
@@ -69,7 +67,8 @@ mypy: flake8
 .PHONY: mypy-clean
 mypy-clean:
 	@printf "${TERM_BRIGHT}MYPY CLEAN${TERM_NONE}\n"
-	$(Q) rm -rf .mypy-cache/
+	$(Q) rm -rf .mypy_cache/
+clean: mypy-clean
 
 # lint
 
@@ -80,21 +79,63 @@ lint: black isort mypy
 ## test
 ##
 
+# testslide
+
 .PHONY: testslide
-testslide:
+testslide: coverage-erase
 	@printf "${TERM_BRIGHT}TESTSLIDE${TERM_NONE}\n"
-	$(Q) testslide \
+	${Q} coverage run -m testslide.cli \
 		--format $(TESTSLIDE_FORMAT) \
 		--fail-fast \
 		--fail-if-focused \
 		$(TESTS_SRCS_PATH)/*_testslide.py
 
+# coverage
+
+.PHONY: coverage-erase
+coverage-erase:
+	@printf "${TERM_BRIGHT}COVERAGE ERASE\n${TERM_NONE}"
+	${Q} coverage erase
+
+.PHONY: coverage-combine
+coverage-combine: testslide
+	@printf "${TERM_BRIGHT}COVERAGE COMBINE\n${TERM_NONE}"
+	${Q} coverage combine
+
+.PHONY: coverage-report
+coverage-report: coverage-combine
+	@printf "${TERM_BRIGHT}COVERAGE REPORT\n${TERM_NONE}"
+	${Q} coverage report
+
+.PHONY: coverage-html
+coverage-html: coverage-combine
+	@printf "${TERM_BRIGHT}COVERAGE HTML\n${TERM_NONE}"
+	${Q} coverage html
+
+.PHONY: coverage-clean
+coverage-clean:
+	@printf "${TERM_BRIGHT}COVERAGE CLEAN\n${TERM_NONE}"
+	${Q} rm -rf htmlcov/ .coverage
+clean: coverage-clean
+
+# test
+
 .PHONY: test
-test: testslide
+test: coverage-report
 
 ##
 ## clean
 ##
+
+# pycache
+
+.PHONY: pycache-clean
+pycache-clean:
+	@printf "${TERM_BRIGHT}PYCACHE CLEAN\n${TERM_NONE}"
+	$(Q) rm -rf $$(find . -type d -name __pycache__)
+clean: pycache-clean
+
+# clean
 
 .PHONY: clean
 clean:

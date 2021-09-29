@@ -1,0 +1,11 @@
+[run]
+parallel = True
+relative_files = True
+
+[report]
+precision = 2
+fail_under = 38.00
+include = 
+	cdd_comm/*
+	tests/*
+	util/*
