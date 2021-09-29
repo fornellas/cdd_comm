@@ -1,19 +1,6 @@
-try:
-    import sigrokdecode
-except ModuleNotFoundError:
-
-    class FakeSigrokDecode:
-        pass
-
-    sigrokdecode = FakeSigrokDecode()
-
-    setattr(sigrokdecode, "OUTPUT_ANN", 0)
-
-    class FakeDecoder:
-        pass
-
-    sigrokdecode.Decoder = FakeDecoder
 from typing import Dict, List, Optional, Tuple, Union, cast
+
+import sigrokdecode
 
 from . import frame, record
 

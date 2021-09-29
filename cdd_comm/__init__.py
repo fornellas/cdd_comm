@@ -2,6 +2,9 @@
 Casio Digital Diaries serial communication protocol.
 """
 
-from .decoder import Decoder
-
-__all__ = ["Decoder"]
+try:
+    from .decoder import Decoder
+except ModuleNotFoundError:
+    pass
+else:
+    __all__ = ["Decoder"]
