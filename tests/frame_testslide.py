@@ -147,7 +147,7 @@ class DirectoryTest(TestCase):
         self.assert_match(frame_mod.ExpenseManagerDirectory)
 
 
-class TestColor(TestCase):
+class ColorTest(TestCase):
     def test_from_color_enum(self) -> None:
         for color_enum in list(frame_mod.ColorEnum):
             frame = frame_mod.Color.from_color_enum(color_enum)
@@ -166,13 +166,17 @@ class TestColor(TestCase):
             self.assertTrue(isinstance(frame, frame_mod.Color))
 
 
-class DateColor(TestCase):
+class DateTest(TestCase):
+    LENGTH: int = frame_mod.Date.LENGTH
+    TYPE: int = frame_mod.Date.TYPE
+    ADDRESS: int = frame_mod.Date.ADDRESS
+
     def test_year(self):
         self.assertEqual(
             frame_mod.Frame.from_data(
-                length=frame_mod.Date.LENGTH,
-                frame_type=frame_mod.Date.TYPE,
-                address=frame_mod.Date.ADDRESS,
+                length=self.LENGTH,
+                frame_type=self.TYPE,
+                address=self.ADDRESS,
                 data=[ord(c) for c in "----------"],
                 checksum=0,
             ).year,
@@ -180,9 +184,9 @@ class DateColor(TestCase):
         )
         self.assertEqual(
             frame_mod.Frame.from_data(
-                length=frame_mod.Date.LENGTH,
-                frame_type=frame_mod.Date.TYPE,
-                address=frame_mod.Date.ADDRESS,
+                length=self.LENGTH,
+                frame_type=self.TYPE,
+                address=self.ADDRESS,
                 data=[ord(c) for c in "2021------"],
                 checksum=0,
             ).year,
@@ -192,9 +196,9 @@ class DateColor(TestCase):
     def test_month(self):
         self.assertEqual(
             frame_mod.Frame.from_data(
-                length=frame_mod.Date.LENGTH,
-                frame_type=frame_mod.Date.TYPE,
-                address=frame_mod.Date.ADDRESS,
+                length=self.LENGTH,
+                frame_type=self.TYPE,
+                address=self.ADDRESS,
                 data=[ord(c) for c in "2021------"],
                 checksum=0,
             ).month,
@@ -202,9 +206,9 @@ class DateColor(TestCase):
         )
         self.assertEqual(
             frame_mod.Frame.from_data(
-                length=frame_mod.Date.LENGTH,
-                frame_type=frame_mod.Date.TYPE,
-                address=frame_mod.Date.ADDRESS,
+                length=self.LENGTH,
+                frame_type=self.TYPE,
+                address=self.ADDRESS,
                 data=[ord(c) for c in "2021-03---"],
                 checksum=0,
             ).month,
@@ -214,9 +218,9 @@ class DateColor(TestCase):
     def test_day(self):
         self.assertEqual(
             frame_mod.Frame.from_data(
-                length=frame_mod.Date.LENGTH,
-                frame_type=frame_mod.Date.TYPE,
-                address=frame_mod.Date.ADDRESS,
+                length=self.LENGTH,
+                frame_type=self.TYPE,
+                address=self.ADDRESS,
                 data=[ord(c) for c in "2021-03---"],
                 checksum=0,
             ).day,
@@ -224,9 +228,9 @@ class DateColor(TestCase):
         )
         self.assertEqual(
             frame_mod.Frame.from_data(
-                length=frame_mod.Date.LENGTH,
-                frame_type=frame_mod.Date.TYPE,
-                address=frame_mod.Date.ADDRESS,
+                length=self.LENGTH,
+                frame_type=self.TYPE,
+                address=self.ADDRESS,
                 data=[ord(c) for c in "2021-03-29"],
                 checksum=0,
             ).day,
@@ -235,9 +239,9 @@ class DateColor(TestCase):
 
     def test_date(self):
         frame = frame_mod.Frame.from_data(
-            length=frame_mod.Date.LENGTH,
-            frame_type=frame_mod.Date.TYPE,
-            address=frame_mod.Date.ADDRESS,
+            length=self.LENGTH,
+            frame_type=self.TYPE,
+            address=self.ADDRESS,
             data=[ord(c) for c in "----------"],
             checksum=0,
         )
@@ -245,9 +249,9 @@ class DateColor(TestCase):
             frame.date
 
         frame = frame_mod.Frame.from_data(
-            length=frame_mod.Date.LENGTH,
-            frame_type=frame_mod.Date.TYPE,
-            address=frame_mod.Date.ADDRESS,
+            length=self.LENGTH,
+            frame_type=self.TYPE,
+            address=self.ADDRESS,
             data=[ord(c) for c in "2021------"],
             checksum=0,
         )
@@ -255,9 +259,9 @@ class DateColor(TestCase):
             frame.date
 
         frame = frame_mod.Frame.from_data(
-            length=frame_mod.Date.LENGTH,
-            frame_type=frame_mod.Date.TYPE,
-            address=frame_mod.Date.ADDRESS,
+            length=self.LENGTH,
+            frame_type=self.TYPE,
+            address=self.ADDRESS,
             data=[ord(c) for c in "2021-03---"],
             checksum=0,
         )
@@ -265,9 +269,9 @@ class DateColor(TestCase):
             frame.date
 
         frame = frame_mod.Frame.from_data(
-            length=frame_mod.Date.LENGTH,
-            frame_type=frame_mod.Date.TYPE,
-            address=frame_mod.Date.ADDRESS,
+            length=self.LENGTH,
+            frame_type=self.TYPE,
+            address=self.ADDRESS,
             data=[ord(c) for c in "2021-03-29"],
             checksum=0,
         )
@@ -275,10 +279,16 @@ class DateColor(TestCase):
 
     def test_match(self) -> None:
         frame = frame_mod.Frame.from_data(
-            length=frame_mod.Date.LENGTH,
-            frame_type=frame_mod.Date.TYPE,
-            address=frame_mod.Date.ADDRESS,
+            length=self.LENGTH,
+            frame_type=self.TYPE,
+            address=self.ADDRESS,
             data=[ord(c) for c in "----------"],
             checksum=0,
         )
         self.assertTrue(isinstance(frame, frame_mod.Date))
+
+
+class DeadlineDateTest(DateTest):
+    LENGTH: int = frame_mod.DeadlineDate.LENGTH
+    TYPE: int = frame_mod.DeadlineDate.TYPE
+    ADDRESS: int = frame_mod.DeadlineDate.ADDRESS
