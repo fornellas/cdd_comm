@@ -262,3 +262,49 @@ class DeadlineTimeTest(TestCase):
             checksum=0,
         )
         self.assertTrue(isinstance(frame, frame_mod.DeadlineTime))
+
+
+class PriorityTest(TestCase):
+    def _get_priority(
+        self, priority_enum: frame_mod.PriorityEnum
+    ) -> frame_mod.Priority:
+        return cast(
+            frame_mod.Priority,
+            frame_mod.Frame.from_data(
+                length=frame_mod.Priority.LENGTH,
+                frame_type=frame_mod.Priority.TYPE,
+                address=frame_mod.Priority.ADDRESS,
+                data=[priority_enum.value],
+                checksum=0,
+            ),
+        )
+
+    def test_color(self) -> None:
+        self.assertEqual(
+            frame_mod.ColorEnum.ORANGE,
+            self._get_priority(frame_mod.PriorityEnum.A).color,
+        )
+        self.assertEqual(
+            frame_mod.ColorEnum.BLUE,
+            self._get_priority(frame_mod.PriorityEnum.B).color,
+        )
+        self.assertEqual(
+            frame_mod.ColorEnum.GREEN,
+            self._get_priority(frame_mod.PriorityEnum.C).color,
+        )
+
+    def test_enum(self) -> None:
+        for priority_enum in list(frame_mod.PriorityEnum):
+            self.assertEqual(self._get_priority(priority_enum).enum, priority_enum)
+
+    def test_from_priority_enum(self) -> None:
+        for priority_enum in list(frame_mod.PriorityEnum):
+            self.assertEqual(
+                frame_mod.Priority.from_priority_enum(priority_enum).enum,
+                priority_enum,
+            )
+
+    def test_match(self) -> None:
+        self.assertTrue(
+            isinstance(self._get_priority(frame_mod.PriorityEnum.A), frame_mod.Priority)
+        )

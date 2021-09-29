@@ -456,7 +456,7 @@ class ToDo(Record):
     checked_date: Optional[datetime.date]
     checked_time: Optional[datetime.time]
     description: str
-    priority: str
+    priority: frame.PriorityEnum
 
     DIRECTORY: ClassVar[Type[frame.Directory]] = frame.ToDoDirectory
 
@@ -474,8 +474,8 @@ class ToDo(Record):
             info_str += "Checked: " + str(self.checked_date) + " "
         if self.checked_time:
             info_str += str(self.checked_time) + " "
+        info_str += f"Priority: {self.priority.name} "
         info_str += self.description + " "
-        info_str += self.priority
         return info_str
 
     @classmethod
@@ -486,7 +486,7 @@ class ToDo(Record):
         checked_date: Optional[datetime.date] = None
         checked_time: Optional[datetime.time] = None
         description: str = ""
-        priority: str = ""
+        priority: Optional[frame.PriorityEnum] = None
 
         for f in frames:
             if isinstance(f, frame.DeadlineDate):
@@ -502,14 +502,14 @@ class ToDo(Record):
             elif isinstance(f, frame.Text):
                 description = f.text
             elif isinstance(f, frame.Priority):
-                priority = f.value
+                priority = f.enum
             else:
                 raise ValueError(f"Unknown frame type: {type(f)}")
 
         if description == "":
             raise ValueError("Missing description")
 
-        if priority == "":
+        if priority is None:
             raise ValueError("Missing priority")
 
         return cls(

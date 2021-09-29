@@ -526,31 +526,61 @@ class DeadlineTime(TextDataFrame):
         return False
 
 
+class PriorityEnum(Enum):
+    A: int = 0x10
+    B: int = 0x20
+    C: int = 0x30
+
+
 class Priority(Frame):
     DESCRIPTION: ClassVar[str] = "Priority"
-    _NAME: Dict[int, str] = {
-        0x10: "A (Orange)",
-        0x20: "B (Blue)",
-        0x30: "C (Green)",
+    LENGTH: int = 0x1
+    TYPE: int = 0x72
+    ADDRESS: int = 0x0
+    _CODE_TO_PRIORITY: Dict[int, PriorityEnum] = {
+        priority.value: priority for priority in list(PriorityEnum)
+    }
+    _PRIORITY_TO_CODE: Dict[PriorityEnum, int] = {
+        priority: code for code, priority in _CODE_TO_PRIORITY.items()
+    }
+    _PRIORITY_TO_COLOR: Dict[PriorityEnum, ColorEnum] = {
+        PriorityEnum.A: ColorEnum.ORANGE,
+        PriorityEnum.B: ColorEnum.BLUE,
+        PriorityEnum.C: ColorEnum.GREEN,
     }
 
     @property
-    def value(self) -> str:
-        return self._NAME[self.data[0]]
+    def color(self) -> ColorEnum:
+        return self._PRIORITY_TO_COLOR[self.enum]
+
+    @property
+    def enum(self) -> PriorityEnum:
+        return self._CODE_TO_PRIORITY[self.data[0]]
+
+    @classmethod
+    def from_priority_enum(cls, priority: PriorityEnum) -> "Priority":
+        data = [cls._PRIORITY_TO_CODE[priority]]
+        return cls(
+            cls.LENGTH,
+            cls.TYPE,
+            cls.ADDRESS,
+            data,
+            cls.calculate_checksum(cls.LENGTH, cls.TYPE, cls.ADDRESS, data),
+        )
 
     @classmethod
     def match(cls, length: int, frame_type: int, address: int, data: List[int]) -> bool:
         if (
-            length == 0x1
-            and frame_type == 0x72
-            and address == 0x0
-            and data[0] in cls._NAME.keys()
+            length == cls.LENGTH
+            and frame_type == cls.TYPE
+            and address == cls.ADDRESS
+            and data[0] in cls._CODE_TO_PRIORITY.keys()
         ):
             return True
         return False
 
     def __str__(self) -> str:
-        return f"{self.DESCRIPTION}: {self.value}"
+        return f"{self.DESCRIPTION}: {self.enum.name}"
 
 
 class ToDoAlarm(TextDataFrame):
