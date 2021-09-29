@@ -510,6 +510,9 @@ class DeadlineDate(Date):
 
 class DeadlineTime(TextDataFrame):
     DESCRIPTION: ClassVar[str] = "Deadline Time"
+    LENGTH: int = 0x5
+    TYPE: int = 0xE4
+    ADDRESS: int = 0x0
 
     @property
     def time(self) -> datetime.time:
@@ -518,7 +521,7 @@ class DeadlineTime(TextDataFrame):
 
     @classmethod
     def match(cls, length: int, frame_type: int, address: int, data: List[int]) -> bool:
-        if length == 0x5 and frame_type == 0xE4 and address == 0x0:
+        if length == cls.LENGTH and frame_type == cls.TYPE and address == cls.ADDRESS:
             return True
         return False
 

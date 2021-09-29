@@ -238,3 +238,27 @@ class DeadlineDateTest(DateTest):
     LENGTH: int = frame_mod.DeadlineDate.LENGTH
     TYPE: int = frame_mod.DeadlineDate.TYPE
     ADDRESS: int = frame_mod.DeadlineDate.ADDRESS
+
+
+class DeadlineTimeTest(TestCase):
+    def test_time(self):
+        self.assertEqual(
+            frame_mod.Frame.from_data(
+                length=frame_mod.DeadlineTime.LENGTH,
+                frame_type=frame_mod.DeadlineTime.TYPE,
+                address=frame_mod.DeadlineTime.ADDRESS,
+                data=[ord(c) for c in "22:33"],
+                checksum=0,
+            ).time,
+            datetime.time(22, 33),
+        )
+
+    def test_match(self) -> None:
+        frame = frame_mod.Frame.from_data(
+            length=frame_mod.DeadlineTime.LENGTH,
+            frame_type=frame_mod.DeadlineTime.TYPE,
+            address=frame_mod.DeadlineTime.ADDRESS,
+            data=[ord(c) for c in "22:33"],
+            checksum=0,
+        )
+        self.assertTrue(isinstance(frame, frame_mod.DeadlineTime))
