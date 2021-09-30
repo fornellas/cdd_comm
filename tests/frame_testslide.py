@@ -636,6 +636,28 @@ class EndOfTransmissionTest(TestCase):
         )
 
 
-# TODO EndOfRecord
-# TODO EndOfTransmission
-# TODO FrameBuilder
+class FrameBuilderTest(TestCase):
+    def test_add_data(self) -> None:
+        length = 2
+        frame_type = 0x80
+        address_low = 4
+        address_high = 5
+        address = (address_high << 8) | address_low
+        data = [ord("0"), ord("1")]
+        checksum = 45
+        frame_builder = frame_mod.FrameBuilder()
+        self.assertEqual(frame_builder.add_data(length), ("Length", None))
+        self.assertEqual(frame_builder.add_data(frame_type), ("Type", None))
+        self.assertEqual(frame_builder.add_data(address_low), ("Address Low", None))
+        self.assertEqual(frame_builder.add_data(address_high), ("Address High", None))
+        self.assertEqual(frame_builder.add_data(data[0]), ("Data", None))
+        self.assertEqual(frame_builder.add_data(data[1]), ("Data", None))
+        desc, frame = frame_builder.add_data(checksum)
+        self.assertEqual(desc, "Checksum")
+        assert frame
+        self.assertTrue(isinstance(frame, frame_mod.Text))
+        self.assertEqual(frame.length, length)
+        self.assertEqual(frame.type, frame_type)
+        self.assertEqual(frame.address, address)
+        self.assertEqual(frame.data, data)
+        self.assertEqual(frame.checksum, checksum)
