@@ -483,6 +483,28 @@ class TextTest(TestCase):
         self.assertEqual(frame.data, data)
         self.assertEqual(frame.text, text)
 
+    def test_from_text_list_multiple_text(self) -> None:
+        text0 = "Hello"
+        text1 = "World"
+        frames = frame_mod.Text.from_text_list([text0, text1])
+        self.assertEqual(len(frames), 2)
+        self._assert_frame(
+            frame=frames[0],
+            length=6,
+            frame_type=0x80,
+            address=0,
+            data=[ord(c) for c in text0] + [0xA],
+            text=text0 + chr(0x1F),
+        )
+        self._assert_frame(
+            frame=frames[1],
+            length=5,
+            frame_type=0x80,
+            address=0,
+            data=[ord(c) for c in text1],
+            text=text1,
+        )
+
     def test_from_text_list_one_frame(self) -> None:
         text = "Hello"
         frames = frame_mod.Text.from_text_list([text])
