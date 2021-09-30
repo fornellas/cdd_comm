@@ -416,6 +416,43 @@ class DayColorHighlightTest(TestCase):
         self.assertTrue(isinstance(self.frame, frame_mod.DayColorHighlight))
 
 
+class StartEndTimeTest(TestCase):
+    def setUp(self):
+        self.frame = frame_mod.Frame.from_data(
+            length=frame_mod.StartEndTime.LENGTH,
+            frame_type=frame_mod.StartEndTime.TYPE,
+            address=frame_mod.StartEndTime.ADDRESS,
+            data=[ord(c) for c in "22:33~23:21"],
+            checksum=0,
+        )
+
+    def test_start_time(self):
+        self.assertEqual(self.frame.start_time, datetime.time(22, 33))
+
+    def test_end_time(self):
+        self.assertEqual(self.frame.end_time, datetime.time(23, 21))
+
+    def test_match(self):
+        self.assertTrue(isinstance(self.frame, frame_mod.StartEndTime))
+
+
+class IllustrationTest(TestCase):
+    def setUp(self):
+        self.frame = frame_mod.Frame.from_data(
+            length=frame_mod.Illustration.LENGTH,
+            frame_type=frame_mod.Illustration.TYPE,
+            address=frame_mod.Illustration.ADDRESS,
+            data=[0x8],
+            checksum=0,
+        )
+
+    def test_end_time(self):
+        self.assertEqual(self.frame.number, 0x8)
+
+    def test_match(self):
+        self.assertTrue(isinstance(self.frame, frame_mod.Illustration))
+
+
 # TODO StartEndTime
 # TODO Illustration
 # TODO Text

@@ -718,6 +718,9 @@ class StartEndTime(TextDataFrame):
 
 class Illustration(Frame):
     DESCRIPTION: ClassVar[str] = "Illustration"
+    LENGTH: ClassVar[int] = 0x1
+    TYPE: ClassVar[int] = 0x21
+    ADDRESS: ClassVar[int] = 0x0
 
     @property
     def number(self) -> int:
@@ -725,7 +728,7 @@ class Illustration(Frame):
 
     @classmethod
     def match(cls, length: int, frame_type: int, address: int, data: List[int]) -> bool:
-        if length == 0x1 and frame_type == 0x21 and address == 0x0:
+        if length == cls.LENGTH and frame_type == cls.TYPE and address == cls.ADDRESS:
             return True
         return False
 
