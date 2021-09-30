@@ -375,6 +375,8 @@ class ScheduleKeeper(Record):
                 if description is None:
                     description = ""
                 description += str(f.text)
+            elif isinstance(f, frame.Time):
+                start_time = f.time
             else:
                 raise ValueError(f"Unknown frame type: {type(f)}")
 
