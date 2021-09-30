@@ -446,13 +446,16 @@ class StartEndTimeTest(TestCase):
 
 
 class IllustrationTest(TestCase):
-    def setUp(self):
-        self.frame = frame_mod.Frame.from_data(
-            length=frame_mod.Illustration.LENGTH,
-            frame_type=frame_mod.Illustration.TYPE,
-            address=frame_mod.Illustration.ADDRESS,
-            data=[0x8],
-            checksum=0,
+    def setUp(self) -> None:
+        self.frame = cast(
+            frame_mod.Illustration,
+            frame_mod.Frame.from_data(
+                length=frame_mod.Illustration.LENGTH,
+                frame_type=frame_mod.Illustration.TYPE,
+                address=frame_mod.Illustration.ADDRESS,
+                data=[0x8],
+                checksum=0,
+            ),
         )
 
     def test_end_time(self) -> None:
@@ -568,7 +571,7 @@ class TextTest(TestCase):
             text=third_frame_text,
         )
 
-    def test_match(self):
+    def test_match(self) -> None:
         frame = frame_mod.Frame.from_data(
             length=3,
             frame_type=0x80,
@@ -588,7 +591,7 @@ class TextTest(TestCase):
 
 
 class EndOfRecordTest(TestCase):
-    def test_get(self):
+    def test_get(self) -> None:
         frame = frame_mod.EndOfRecord.get()
         self.assertEqual(frame.length, frame_mod.EndOfRecord.LENGTH)
         self.assertEqual(frame.type, frame_mod.EndOfRecord.TYPE)
@@ -611,7 +614,7 @@ class EndOfRecordTest(TestCase):
 
 
 class EndOfTransmissionTest(TestCase):
-    def test_get(self):
+    def test_get(self) -> None:
         frame = frame_mod.EndOfTransmission.get()
         self.assertEqual(frame.length, frame_mod.EndOfTransmission.LENGTH)
         self.assertEqual(frame.type, frame_mod.EndOfTransmission.TYPE)
