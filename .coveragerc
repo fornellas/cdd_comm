@@ -4,7 +4,7 @@ relative_files = True
 
 [report]
 precision = 2
-fail_under = 56.00
+fail_under = 81
 include = 
 	cdd_comm/*
 	tests/*
