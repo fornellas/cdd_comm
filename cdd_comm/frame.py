@@ -3,7 +3,7 @@ import textwrap
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from enum import Enum
-from typing import ClassVar, Dict, List, Optional, Set, Tuple, Type
+from typing import Any, ClassVar, Dict, List, Optional, Set, Tuple, Type, Union
 
 ##
 ## Frame
@@ -13,7 +13,7 @@ from typing import ClassVar, Dict, List, Optional, Set, Tuple, Type
 @dataclass
 class Frame:
     length: int
-    type: int
+    frame_type: int
     address: int
     data: List[int]
     checksum: int
@@ -40,12 +40,12 @@ class Frame:
     def __hash__(self) -> int:
         return id(self)
 
-    def __eq__(self, other) -> bool:
+    def __eq__(self, other: Union[Any, "Frame"]) -> bool:
         if type(other) != type(self):
             return False
         return (
             self.length == other.length
-            and self.type == other.type
+            and self.frame_type == other.frame_type
             and self.address == other.address
             and self.data == other.data
             and self.checksum == other.checksum
@@ -65,7 +65,7 @@ class Frame:
 
     def is_checksum_valid(self) -> bool:
         if self.checksum == self.calculate_checksum(
-            self.length, self.type, self.address, self.data
+            self.length, self.frame_type, self.address, self.data
         ):
             return True
         else:
@@ -81,7 +81,7 @@ class Frame:
         bytes_list: List[int] = [
             self._FRAME_START,
             *self._encode(self.length),
-            *self._encode(self.type),
+            *self._encode(self.frame_type),
             *self._encode(self.address & 0xFF),
             *self._encode((self.address & 0xFF00) >> 8),
         ]
@@ -789,7 +789,7 @@ class Text(TextDataFrame):
                 frame_list.append(
                     cls(
                         length=length,
-                        type=frame_type,
+                        frame_type=frame_type,
                         address=address,
                         data=data,
                         checksum=cls.calculate_checksum(
@@ -885,7 +885,7 @@ class FrameBuilder:
 
     def __init__(self):
         self.length = None
-        self.type = None
+        self.frame_type = None
         self._address_low = None
         self._address_high = None
         self.address = None
@@ -898,8 +898,8 @@ class FrameBuilder:
             self.length = data
             self._data_count = self.length
             return ("Length", None)
-        if self.type is None:
-            self.type = data
+        if self.frame_type is None:
+            self.frame_type = data
             return ("Type", None)
         if self._address_low is None:
             self._address_low = data
@@ -919,7 +919,7 @@ class FrameBuilder:
             "Checksum",
             Frame.from_data(
                 self.length,
-                self.type,
+                self.frame_type,
                 self.address,
                 self.data,
                 self.checksum,

@@ -10,35 +10,37 @@ class FrameTest(TestCase):
     def test_get_kebab_case_description(self) -> None:
         self.assertEqual(
             frame_mod.Frame(
-                length=0, type=1, address=2, data=[], checksum=0
+                length=0, frame_type=1, address=2, data=[], checksum=0
             ).get_kebab_case_description(),
             "frame",
         )
 
     def test_eq(self) -> None:
         self.assertTrue(
-            frame_mod.Frame(length=0, type=1, address=2, data=[], checksum=0)
-            == frame_mod.Frame(length=0, type=1, address=2, data=[], checksum=0)
+            frame_mod.Frame(length=0, frame_type=1, address=2, data=[], checksum=0)
+            == frame_mod.Frame(length=0, frame_type=1, address=2, data=[], checksum=0)
         )
         self.assertFalse(
-            frame_mod.Frame(length=0, type=1, address=2, data=[], checksum=0)
-            == frame_mod.Frame(length=1, type=1, address=2, data=[0], checksum=0)
+            frame_mod.Frame(length=0, frame_type=1, address=2, data=[], checksum=0)
+            == frame_mod.Frame(length=1, frame_type=1, address=2, data=[0], checksum=0)
         )
         self.assertFalse(
-            frame_mod.Frame(length=0, type=1, address=2, data=[], checksum=0)
-            == frame_mod.Frame(length=0, type=11, address=2, data=[], checksum=0)
+            frame_mod.Frame(length=0, frame_type=1, address=2, data=[], checksum=0)
+            == frame_mod.Frame(length=0, frame_type=11, address=2, data=[], checksum=0)
         )
         self.assertFalse(
-            frame_mod.Frame(length=0, type=1, address=2, data=[], checksum=0)
-            == frame_mod.Frame(length=0, type=1, address=22, data=[], checksum=0)
+            frame_mod.Frame(length=0, frame_type=1, address=2, data=[], checksum=0)
+            == frame_mod.Frame(length=0, frame_type=1, address=22, data=[], checksum=0)
         )
         self.assertFalse(
-            frame_mod.Frame(length=2, type=1, address=2, data=[0, 1], checksum=0)
-            == frame_mod.Frame(length=2, type=1, address=2, data=[0, 2], checksum=0)
+            frame_mod.Frame(length=2, frame_type=1, address=2, data=[0, 1], checksum=0)
+            == frame_mod.Frame(
+                length=2, frame_type=1, address=2, data=[0, 2], checksum=0
+            )
         )
         self.assertFalse(
-            frame_mod.Frame(length=0, type=1, address=2, data=[], checksum=0)
-            == frame_mod.Frame(length=0, type=1, address=2, data=[], checksum=1)
+            frame_mod.Frame(length=0, frame_type=1, address=2, data=[], checksum=0)
+            == frame_mod.Frame(length=0, frame_type=1, address=2, data=[], checksum=1)
         )
 
     def test_calculate_checksum(self) -> None:
@@ -58,32 +60,32 @@ class FrameTest(TestCase):
     def test_is_checksum_valid(self) -> None:
         self.assertTrue(
             frame_mod.Frame(
-                length=3, type=244, address=134, data=[0, 1, 2], checksum=128
+                length=3, frame_type=244, address=134, data=[0, 1, 2], checksum=128
             ).is_checksum_valid()
         )
         self.assertFalse(
             frame_mod.Frame(
-                length=3, type=244, address=134, data=[0, 1, 2], checksum=127
+                length=3, frame_type=244, address=134, data=[0, 1, 2], checksum=127
             ).is_checksum_valid()
         )
 
     def test_bytes(self) -> None:
         self.assertEqual(
             frame_mod.Frame(
-                length=3, type=244, address=134, data=[0, 1, 2], checksum=128
+                length=3, frame_type=244, address=134, data=[0, 1, 2], checksum=128
             ).bytes(),
             b":03F4860000010280",
         )
         self.assertEqual(
             frame_mod.Frame(
-                length=3, type=234, address=55, data=[0, 1, 2], checksum=34
+                length=3, frame_type=234, address=55, data=[0, 1, 2], checksum=34
             ).bytes(),
             b":03EA370000010222",
         )
 
     def test_match(self) -> None:
         frame = frame_mod.Frame(
-            length=3, type=234, address=55, data=[0, 1, 2], checksum=34
+            length=3, frame_type=234, address=55, data=[0, 1, 2], checksum=34
         )
         self.assertFalse(
             frame.match(length=3, frame_type=234, address=55, data=[0, 1, 2])
@@ -476,7 +478,7 @@ class TextTest(TestCase):
         text: str,
     ) -> None:
         self.assertEqual(frame.length, length)
-        self.assertEqual(frame.type, frame_type)
+        self.assertEqual(frame.frame_type, frame_type)
         self.assertEqual(frame.address, address)
         self.assertEqual(frame.data, data)
         self.assertEqual(frame.text, text)
@@ -594,7 +596,7 @@ class EndOfRecordTest(TestCase):
     def test_get(self) -> None:
         frame = frame_mod.EndOfRecord.get()
         self.assertEqual(frame.length, frame_mod.EndOfRecord.LENGTH)
-        self.assertEqual(frame.type, frame_mod.EndOfRecord.TYPE)
+        self.assertEqual(frame.frame_type, frame_mod.EndOfRecord.TYPE)
         self.assertEqual(frame.address, frame_mod.EndOfRecord.ADDRESS)
         self.assertEqual(frame.data, [])
 
@@ -617,7 +619,7 @@ class EndOfTransmissionTest(TestCase):
     def test_get(self) -> None:
         frame = frame_mod.EndOfTransmission.get()
         self.assertEqual(frame.length, frame_mod.EndOfTransmission.LENGTH)
-        self.assertEqual(frame.type, frame_mod.EndOfTransmission.TYPE)
+        self.assertEqual(frame.frame_type, frame_mod.EndOfTransmission.TYPE)
         self.assertEqual(frame.address, frame_mod.EndOfTransmission.ADDRESS)
         self.assertEqual(frame.data, [])
 
@@ -657,7 +659,7 @@ class FrameBuilderTest(TestCase):
         assert frame
         self.assertTrue(isinstance(frame, frame_mod.Text))
         self.assertEqual(frame.length, length)
-        self.assertEqual(frame.type, frame_type)
+        self.assertEqual(frame.frame_type, frame_type)
         self.assertEqual(frame.address, address)
         self.assertEqual(frame.data, data)
         self.assertEqual(frame.checksum, checksum)
