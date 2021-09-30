@@ -14,6 +14,13 @@ else
 Q :=
 endif
 
+DEV?=0
+ifeq ($(DEV),0)
+TESTSLIDE_OPTS = --fail-if-focused
+else
+TESTSLIDE_OPTS = --focus --fail-fast
+endif
+
 test:
 
 ##
@@ -86,8 +93,7 @@ testslide: coverage-erase
 	@printf "${TERM_BRIGHT}TESTSLIDE${TERM_NONE}\n"
 	${Q} coverage run -m testslide.cli \
 		--format $(TESTSLIDE_FORMAT) \
-		--fail-fast \
-		--fail-if-focused \
+		$(TESTSLIDE_OPTS) \
 		$(TESTS_SRCS_PATH)/*_testslide.py
 
 # coverage
