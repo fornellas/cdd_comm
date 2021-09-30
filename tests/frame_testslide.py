@@ -587,6 +587,52 @@ class TextTest(TestCase):
         self.assertTrue(isinstance(frame, frame_mod.Text))
 
 
+class EndOfRecordTest(TestCase):
+    def test_get(self):
+        frame = frame_mod.EndOfRecord.get()
+        self.assertEqual(frame.length, frame_mod.EndOfRecord.LENGTH)
+        self.assertEqual(frame.type, frame_mod.EndOfRecord.TYPE)
+        self.assertEqual(frame.address, frame_mod.EndOfRecord.ADDRESS)
+        self.assertEqual(frame.data, [])
+
+    def assert_match(self, directory_class: Type[frame_mod.Directory]) -> None:
+        self.assertTrue(
+            type(
+                frame_mod.Frame.from_data(
+                    length=frame_mod.EndOfRecord.LENGTH,
+                    frame_type=frame_mod.EndOfRecord.TYPE,
+                    address=frame_mod.EndOfRecord.ADDRESS,
+                    data=[],
+                    checksum=0,
+                )
+            )
+            == frame_mod.EndOfRecord
+        )
+
+
+class EndOfTransmissionTest(TestCase):
+    def test_get(self):
+        frame = frame_mod.EndOfTransmission.get()
+        self.assertEqual(frame.length, frame_mod.EndOfTransmission.LENGTH)
+        self.assertEqual(frame.type, frame_mod.EndOfTransmission.TYPE)
+        self.assertEqual(frame.address, frame_mod.EndOfTransmission.ADDRESS)
+        self.assertEqual(frame.data, [])
+
+    def assert_match(self, directory_class: Type[frame_mod.Directory]) -> None:
+        self.assertTrue(
+            type(
+                frame_mod.Frame.from_data(
+                    length=frame_mod.EndOfTransmission.LENGTH,
+                    frame_type=frame_mod.EndOfTransmission.TYPE,
+                    address=frame_mod.EndOfTransmission.ADDRESS,
+                    data=[],
+                    checksum=0,
+                )
+            )
+            == frame_mod.EndOfTransmission
+        )
+
+
 # TODO EndOfRecord
 # TODO EndOfTransmission
 # TODO FrameBuilder
