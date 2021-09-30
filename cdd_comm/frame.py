@@ -1,4 +1,5 @@
 import datetime
+import textwrap
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from enum import Enum
@@ -738,31 +739,54 @@ class Illustration(Frame):
 
 class Text(TextDataFrame):
     DESCRIPTION: ClassVar[str] = "Text"
+    TYPE_LOW: ClassVar[int] = 0x80
+    TYPE_HIGH: ClassVar[int] = 0x81
+    _MAX_CHUNK_SIZE: int = 0x80
 
     @classmethod
     def match(cls, length: int, frame_type: int, address: int, data: List[int]) -> bool:
         if (
-            frame_type == 0x80  # Text with address < 0x100
-            or frame_type == 0x81  # Text with address >= 0x100
+            frame_type == cls.TYPE_LOW  # Text with address < 0x100
+            or frame_type == cls.TYPE_HIGH  # Text with address >= 0x100
         ):
             return True
         return False
 
     @classmethod
-    def from_text_list(cls, text_list: List[str]) -> List["Text"]:
-        frames: List[Text] = []
-        address: int = 0
+    def _from_text(cls, text: str, last: bool) -> List["Text"]:
+        if not last:
+            text += chr(0x1F)
+        else:
+            text = text[: 0x80 * 3]
 
-        for idx, text in enumerate(text_list):
-            if idx + 1 < len(text_list):
-                text = text + chr(0x1F)
-            if len(text) < 0x100:
-                frame_type: int = 0x80
+        frame_list: List["Text"] = []
+
+        lines = text.split("\n")
+
+        address = 0
+        for idx, line in enumerate(lines):
+            last = idx + 1 == len(lines)
+
+            for chunk in textwrap.wrap(
+                line,
+                width=cls._MAX_CHUNK_SIZE,
+                expand_tabs=False,
+                replace_whitespace=False,
+                break_on_hyphens=False,
+                drop_whitespace=False,
+            )[:3]:
+                frame_type = cls.TYPE_LOW
+                if address >= (cls._MAX_CHUNK_SIZE * 2):
+                    frame_type = cls.TYPE_HIGH
+                    address = 0
                 data = [
-                    cls.UNICODE_TO_CASIO.get(c, cls.UNICODE_TO_CASIO["?"]) for c in text
+                    cls.UNICODE_TO_CASIO.get(c, cls.UNICODE_TO_CASIO["?"])
+                    for c in chunk
                 ]
-                length: int = len(data)
-                frames.append(
+                if not last:
+                    data.append(cls.UNICODE_TO_CASIO["\n"])
+                length = len(data)
+                frame_list.append(
                     cls(
                         length=length,
                         type=frame_type,
@@ -773,8 +797,18 @@ class Text(TextDataFrame):
                         ),
                     )
                 )
-            else:
-                raise NotImplementedError
+                address += len(data)
+
+        return frame_list
+
+    @classmethod
+    def from_text_list(cls, text_list: List[str]) -> List["Text"]:
+        frames: List[Text] = []
+        address: int = 0
+
+        for idx, text in enumerate(text_list):
+            last: bool = idx + 1 == len(text_list)
+            frames.extend(cls._from_text(text=text, last=last))
             address += len(text)
 
         return frames

@@ -332,16 +332,19 @@ class PriorityTest(TestCase):
 
 
 class DayHighlightTest(TestCase):
-    def setUp(self):
-        self.frame = frame_mod.Frame.from_data(
-            length=frame_mod.DayHighlight.LENGTH,
-            frame_type=frame_mod.DayHighlight.TYPE,
-            address=frame_mod.DayHighlight.ADDRESS,
-            data=[2, 1, 0, 3],
-            checksum=0,
+    def setUp(self) -> None:
+        self.frame = cast(
+            frame_mod.DayHighlight,
+            frame_mod.Frame.from_data(
+                length=frame_mod.DayHighlight.LENGTH,
+                frame_type=frame_mod.DayHighlight.TYPE,
+                address=frame_mod.DayHighlight.ADDRESS,
+                data=[2, 1, 0, 3],
+                checksum=0,
+            ),
         )
 
-    def test_days(self):
+    def test_days(self) -> None:
         self.assertEqual(self.frame.days, {17, 26, 2, 1})
 
     def test_match(self) -> None:
@@ -349,7 +352,7 @@ class DayHighlightTest(TestCase):
 
 
 class DayColorHighlightTest(TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         data: List[int] = []
         for idx in range(0, frame_mod.DayColorHighlight.LENGTH):
             color = frame_mod.ColorEnum.BLUE.value
@@ -361,20 +364,23 @@ class DayColorHighlightTest(TestCase):
             if idx % 2:
                 highlight = 0x80
             data.append(color | highlight)
-        self.frame = frame_mod.Frame.from_data(
-            length=frame_mod.DayColorHighlight.LENGTH,
-            frame_type=frame_mod.DayColorHighlight.TYPE,
-            address=frame_mod.DayColorHighlight.ADDRESS,
-            data=data,
-            checksum=0,
+        self.frame = cast(
+            frame_mod.DayColorHighlight,
+            frame_mod.Frame.from_data(
+                length=frame_mod.DayColorHighlight.LENGTH,
+                frame_type=frame_mod.DayColorHighlight.TYPE,
+                address=frame_mod.DayColorHighlight.ADDRESS,
+                data=data,
+                checksum=0,
+            ),
         )
 
-    def test_days(self):
+    def test_days(self) -> None:
         self.assertEqual(
             self.frame.days, {1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 27, 29, 31}
         )
 
-    def test_colors(self):
+    def test_colors(self) -> None:
         self.assertEqual(
             self.frame.colors,
             [
@@ -417,22 +423,25 @@ class DayColorHighlightTest(TestCase):
 
 
 class StartEndTimeTest(TestCase):
-    def setUp(self):
-        self.frame = frame_mod.Frame.from_data(
-            length=frame_mod.StartEndTime.LENGTH,
-            frame_type=frame_mod.StartEndTime.TYPE,
-            address=frame_mod.StartEndTime.ADDRESS,
-            data=[ord(c) for c in "22:33~23:21"],
-            checksum=0,
+    def setUp(self) -> None:
+        self.frame = cast(
+            frame_mod.StartEndTime,
+            frame_mod.Frame.from_data(
+                length=frame_mod.StartEndTime.LENGTH,
+                frame_type=frame_mod.StartEndTime.TYPE,
+                address=frame_mod.StartEndTime.ADDRESS,
+                data=[ord(c) for c in "22:33~23:21"],
+                checksum=0,
+            ),
         )
 
-    def test_start_time(self):
+    def test_start_time(self) -> None:
         self.assertEqual(self.frame.start_time, datetime.time(22, 33))
 
-    def test_end_time(self):
+    def test_end_time(self) -> None:
         self.assertEqual(self.frame.end_time, datetime.time(23, 21))
 
-    def test_match(self):
+    def test_match(self) -> None:
         self.assertTrue(isinstance(self.frame, frame_mod.StartEndTime))
 
 
@@ -446,16 +455,138 @@ class IllustrationTest(TestCase):
             checksum=0,
         )
 
-    def test_end_time(self):
+    def test_end_time(self) -> None:
         self.assertEqual(self.frame.number, 0x8)
 
-    def test_match(self):
+    def test_match(self) -> None:
         self.assertTrue(isinstance(self.frame, frame_mod.Illustration))
 
 
-# TODO StartEndTime
-# TODO Illustration
-# TODO Text
+class TextTest(TestCase):
+    def _assert_frame(
+        self,
+        frame: frame_mod.Text,
+        length: int,
+        frame_type: int,
+        address: int,
+        data: List[int],
+        text: str,
+    ) -> None:
+        self.assertEqual(frame.length, length)
+        self.assertEqual(frame.type, frame_type)
+        self.assertEqual(frame.address, address)
+        self.assertEqual(frame.data, data)
+        self.assertEqual(frame.text, text)
+
+    def test_from_text_list_one_frame(self) -> None:
+        text = "Hello"
+        frames = frame_mod.Text.from_text_list([text])
+        self.assertEqual(len(frames), 1)
+        frame0 = frames[0]
+        self._assert_frame(
+            frame=frame0,
+            length=5,
+            frame_type=0x80,
+            address=0,
+            data=[ord(c) for c in text],
+            text=text,
+        )
+
+    def test_from_text_list_one_frame_multi_line(self) -> None:
+        text = "Hello\nWorld"
+        frames = frame_mod.Text.from_text_list([text])
+        self.assertEqual(len(frames), 2)
+        self._assert_frame(
+            frame=frames[0],
+            length=6,
+            frame_type=0x80,
+            address=0,
+            data=[ord(c) for c in "Hello"] + [13],
+            text="Hello\n",
+        )
+        self._assert_frame(
+            frame=frames[1],
+            length=5,
+            frame_type=0x80,
+            address=6,
+            data=[ord(c) for c in "World"],
+            text="World",
+        )
+
+    def test_from_text_list_two_frames(self) -> None:
+        first_frame_text = "0123456789" * 12 + "01234567"
+        second_frame_text = "second"
+        text = first_frame_text + second_frame_text
+        frames = frame_mod.Text.from_text_list([text])
+        self.assertEqual(len(frames), 2)
+        self._assert_frame(
+            frame=frames[0],
+            length=0x80,
+            frame_type=0x80,
+            address=0,
+            data=[ord(c) for c in first_frame_text],
+            text=first_frame_text,
+        )
+        self._assert_frame(
+            frame=frames[1],
+            length=len(second_frame_text),
+            frame_type=0x80,
+            address=0x80,
+            data=[ord(c) for c in second_frame_text],
+            text=second_frame_text,
+        )
+
+    def test_from_text_list_three_frames(self) -> None:
+        first_frame_text = "0123456789" * 12 + "01234567"
+        second_frame_text = "1234567890" * 12 + "12345678"
+        third_frame_text = "third"
+        text = first_frame_text + second_frame_text + third_frame_text
+        frames = frame_mod.Text.from_text_list([text])
+        self.assertEqual(len(frames), 3)
+        self._assert_frame(
+            frame=frames[0],
+            length=0x80,
+            frame_type=0x80,
+            address=0,
+            data=[ord(c) for c in first_frame_text],
+            text=first_frame_text,
+        )
+        self._assert_frame(
+            frame=frames[1],
+            length=len(second_frame_text),
+            frame_type=0x80,
+            address=0x80,
+            data=[ord(c) for c in second_frame_text],
+            text=second_frame_text,
+        )
+        self._assert_frame(
+            frame=frames[2],
+            length=len(third_frame_text),
+            frame_type=0x81,
+            address=0,
+            data=[ord(c) for c in third_frame_text],
+            text=third_frame_text,
+        )
+
+    def test_match(self):
+        frame = frame_mod.Frame.from_data(
+            length=3,
+            frame_type=0x80,
+            address=0,
+            data=[ord(c) for c in "abc"],
+            checksum=0,
+        )
+        self.assertTrue(isinstance(frame, frame_mod.Text))
+        frame = frame_mod.Frame.from_data(
+            length=3,
+            frame_type=0x80,
+            address=0,
+            data=[ord(c) for c in "abc"],
+            checksum=0,
+        )
+        self.assertTrue(isinstance(frame, frame_mod.Text))
+
+
 # TODO EndOfRecord
 # TODO EndOfTransmission
 # TODO FrameBuilder
