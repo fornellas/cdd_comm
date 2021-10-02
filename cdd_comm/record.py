@@ -168,7 +168,6 @@ class Telephone(Record):
 
 @dataclass
 class BusinessCard(Record):
-    color: Optional[frame_mod.ColorEnum]
     employer: str
     name: str
     telephone_number: Optional[str]
@@ -179,6 +178,7 @@ class BusinessCard(Record):
     po_box: Optional[str]
     address: Optional[str]
     memo: Optional[str]
+    color: Optional[frame_mod.ColorEnum]
 
     DIRECTORY: ClassVar[Type[frame_mod.Directory]] = frame_mod.BusinessCardDirectory
 
@@ -235,7 +235,6 @@ class BusinessCard(Record):
             memo = fields[9]
 
         return cls(
-            color,
             employer,
             name,
             telephone_number,
@@ -246,6 +245,7 @@ class BusinessCard(Record):
             po_box,
             address,
             memo,
+            color,
         )
 
     def to_frames(self) -> List[frame_mod.Frame]:
@@ -254,8 +254,8 @@ class BusinessCard(Record):
 
 @dataclass
 class Memo(Record):
-    color: Optional[frame_mod.ColorEnum]
     text: str
+    color: Optional[frame_mod.ColorEnum]
 
     DIRECTORY: ClassVar[Type[frame_mod.Directory]] = frame_mod.MemoDirectory
 
@@ -276,7 +276,7 @@ class Memo(Record):
             else:
                 raise ValueError(f"Unknown frame type: {type(f)}")
 
-        return cls(color, text)
+        return cls(text, color)
 
     def to_frames(self) -> List[frame_mod.Frame]:
         raise NotImplementedError
@@ -337,25 +337,25 @@ class Calendar(Record):
 
 
 @dataclass
-class ScheduleKeeper(Record):
-    color: str
+class Schedule(Record):
     date: datetime.date
     start_time: Optional[datetime.time]
     end_time: Optional[datetime.time]
     alarm_time: Optional[datetime.time]
     illustration: Optional[int]
     description: Optional[str]
+    color: Optional[frame_mod.ColorEnum]
 
     DIRECTORY: ClassVar[Type[frame_mod.Directory]] = frame_mod.ScheduleKeeperDirectory
 
-    DESCRIPTION: str = "Schedule Keeper"
+    DESCRIPTION: str = "Schedule"
 
     def __str__(self) -> str:
         return f"Schedule Keeper: {self.date}, {self.start_time}, {self.end_time}, {self.alarm_time}, {self.illustration}, {self.description} ({self.color})"
 
     @classmethod
-    def from_frames(cls, frames: List[frame_mod.Frame]) -> "ScheduleKeeper":
-        color: str = "Blue"
+    def from_frames(cls, frames: List[frame_mod.Frame]) -> "Schedule":
+        color: Optional[frame_mod.ColorEnum] = None
         date: Optional[datetime.date] = None
         start_time: Optional[datetime.time] = None
         end_time: Optional[datetime.time] = None
@@ -365,7 +365,7 @@ class ScheduleKeeper(Record):
 
         for f in frames:
             if isinstance(f, frame_mod.Color):
-                color = f.name
+                color = f.enum
             elif isinstance(f, frame_mod.Date):
                 date = f.date
             elif isinstance(f, frame_mod.StartEndTime):
@@ -390,13 +390,13 @@ class ScheduleKeeper(Record):
             raise ValueError("Missing either start_time or description")
 
         return cls(
-            color,
             date,
             start_time,
             end_time,
             alarm_time,
             illustration,
             description,
+            color,
         )
 
     def to_frames(self) -> List[frame_mod.Frame]:
@@ -405,12 +405,12 @@ class ScheduleKeeper(Record):
 
 @dataclass
 class Reminder(Record):
-    color: str
     year: Optional[int]
     month: Optional[int]
     day: Optional[int]
     alarm_time: Optional[datetime.time]
     description: str
+    color: Optional[frame_mod.ColorEnum]
 
     DIRECTORY: ClassVar[Type[frame_mod.Directory]] = frame_mod.ReminderDirectory
 
@@ -439,7 +439,7 @@ class Reminder(Record):
 
     @classmethod
     def from_frames(cls, frames: List[frame_mod.Frame]) -> "Reminder":
-        color: str = "Blue"
+        color: Optional[frame_mod.ColorEnum] = None
         year: Optional[int] = None
         month: Optional[int] = None
         day: Optional[int] = None
@@ -448,7 +448,7 @@ class Reminder(Record):
 
         for f in frames:
             if isinstance(f, frame_mod.Color):
-                color = f.name
+                color = f.enum
             elif isinstance(f, frame_mod.Date):
                 year = f.year
                 month = f.month
@@ -463,7 +463,7 @@ class Reminder(Record):
         if description == "":
             raise ValueError("Missing description")
 
-        return cls(color, year, month, day, alarm_time, description)
+        return cls(year, month, day, alarm_time, description, color)
 
     def to_frames(self) -> List[frame_mod.Frame]:
         raise NotImplementedError
@@ -549,7 +549,6 @@ class ToDo(Record):
 
 @dataclass
 class Expense(Record):
-    color: str
     date: datetime.date
     amount: float
     payment_type: Optional[str]
@@ -557,6 +556,7 @@ class Expense(Record):
     rcpt: Optional[str]  # Empty for CSF-8950
     bus: Optional[str]  # Empty for CSF-8950
     description: Optional[str]
+    color: Optional[frame_mod.ColorEnum]
 
     DIRECTORY: ClassVar[Type[frame_mod.Directory]] = frame_mod.ExpenseManagerDirectory
 
@@ -580,10 +580,10 @@ class Expense(Record):
     @classmethod
     def from_frames(cls, frames: List[frame_mod.Frame]) -> "Expense":
         text = ""
-        color = "Blue"
+        color: Optional[frame_mod.ColorEnum] = None
         for f in frames:
             if isinstance(f, frame_mod.Color):
-                color = f.name
+                color = f.enum
             elif isinstance(f, frame_mod.Text):
                 text += f.text
             else:
@@ -627,7 +627,7 @@ class Expense(Record):
             description = fields[6]
 
         return cls(
-            color, date, amount, payment_type, expense_type, rcpt, bus, description
+            date, amount, payment_type, expense_type, rcpt, bus, description, color
         )
 
     def to_frames(self) -> List[frame_mod.Frame]:
