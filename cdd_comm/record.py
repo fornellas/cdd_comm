@@ -6,6 +6,21 @@ from typing import ClassVar, Dict, List, Optional, Set, Type
 from . import frame as frame_mod
 
 
+def _raw_list_to_text_list(raw_list: List[Optional[str]]) -> List[str]:
+    text_list: List[str] = []
+    data: bool = False
+    for e in reversed(raw_list):
+        if e is None:
+            if data:
+                text_list.insert(0, "")
+            else:
+                continue
+        else:
+            data = True
+            text_list.insert(0, e)
+    return text_list
+
+
 class Record(ABC):
 
     DESCRIPTION: str = "Record"
@@ -136,27 +151,19 @@ class Telephone(Record):
         )
 
     def to_frames(self) -> List[frame_mod.Frame]:
-        raw_list: List[Optional[str]] = [self.name]
-        raw_list.append(self.number)
-        raw_list.append(self.address)
-        raw_list.append(self.field1)
-        raw_list.append(self.field2)
-        raw_list.append(self.field3)
-        raw_list.append(self.field4)
-        raw_list.append(self.field5)
-        raw_list.append(self.field6)
-
-        text_list: List[str] = []
-        data: bool = False
-        for e in reversed(raw_list):
-            if e is None:
-                if data:
-                    text_list.insert(0, "")
-                else:
-                    continue
-            else:
-                data = True
-                text_list.insert(0, e)
+        text_list: List[str] = _raw_list_to_text_list(
+            [
+                self.name,
+                self.number,
+                self.address,
+                self.field1,
+                self.field2,
+                self.field3,
+                self.field4,
+                self.field5,
+                self.field6,
+            ]
+        )
 
         frames: List[frame_mod.Frame] = []
         if self.color is not None:
@@ -249,7 +256,27 @@ class BusinessCard(Record):
         )
 
     def to_frames(self) -> List[frame_mod.Frame]:
-        raise NotImplementedError
+        text_list: List[str] = _raw_list_to_text_list(
+            [
+                self.employer,
+                self.name,
+                self.telephone_number,
+                self.telex_number,
+                self.fax_number,
+                self.position,
+                self.department,
+                self.po_box,
+                self.address,
+                self.memo,
+            ]
+        )
+
+        frames: List[frame_mod.Frame] = []
+        if self.color is not None:
+            frames.append(frame_mod.Color.from_color_enum(self.color))
+        frames.extend(frame_mod.Text.from_text_list(text_list))
+
+        return frames
 
 
 @dataclass
