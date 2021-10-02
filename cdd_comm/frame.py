@@ -756,8 +756,8 @@ class Text(TextDataFrame):
     def _from_text(cls, text: str, last: bool) -> List["Text"]:
         if not last:
             text += chr(0x1F)
-        else:
-            text = text[: 0x80 * 3]
+        if len(text) > (0x80 * 3):
+            raise ValueError("Text too long")
 
         frame_list: List["Text"] = []
 
@@ -779,10 +779,11 @@ class Text(TextDataFrame):
                 if address >= (cls._MAX_CHUNK_SIZE * 2):
                     frame_type = cls.TYPE_HIGH
                     address = 0
-                data = [
-                    cls.UNICODE_TO_CASIO.get(c, cls.UNICODE_TO_CASIO["?"])
-                    for c in chunk
-                ]
+                data: List[int] = []
+                for c in chunk:
+                    if c not in cls.UNICODE_TO_CASIO:
+                        raise ValueError(f"Invalid character: {repr(c)}")
+                    data.append(cls.UNICODE_TO_CASIO[c])
                 if not last:
                     data.append(cls.UNICODE_TO_CASIO["\n"])
                 length = len(data)
