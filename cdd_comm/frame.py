@@ -237,7 +237,7 @@ class Color(Frame):
         return f"{self.DESCRIPTION}: {self.name}"
 
 
-class TextDataFrame(Frame, ABC):
+class TextDataFrame(ABC, Frame):
     CASIO_TO_UNICODE: Dict[int, str] = {
         10: chr(0x1F),  # Unit separator
         13: "\n",

@@ -1,18 +1,18 @@
 import datetime
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import ClassVar, Dict, List, Optional, Set, Type, cast
+from typing import ClassVar, Dict, List, Optional, Set, Type
 
-from . import frame
+from . import frame as frame_mod
 
 
 class Record(ABC):
 
     DESCRIPTION: str = "Record"
 
-    DIRECTORY: ClassVar[Type[frame.Directory]]
+    DIRECTORY: ClassVar[Type[frame_mod.Directory]]
 
-    DIRECTORY_TO_RECORD: Dict[Type[frame.Directory], Type["Record"]] = {}
+    DIRECTORY_TO_RECORD: Dict[Type[frame_mod.Directory], Type["Record"]] = {}
 
     def __init_subclass__(cls) -> None:
         super().__init_subclass__()
@@ -20,17 +20,16 @@ class Record(ABC):
 
     @classmethod
     @abstractmethod
-    def from_frames(cls, frames: List[frame.Frame]) -> "Record":
+    def from_frames(cls, frames: List[frame_mod.Frame]) -> "Record":
         pass
 
     @abstractmethod
-    def to_frames(self) -> List[frame.Frame]:
+    def to_frames(self) -> List[frame_mod.Frame]:
         pass
 
 
 @dataclass
 class Telephone(Record):
-    color: Optional[frame.ColorEnum]
     name: str
     number: Optional[str]
     address: Optional[str]
@@ -40,8 +39,9 @@ class Telephone(Record):
     field4: Optional[str]
     field5: Optional[str]
     field6: Optional[str]
+    color: Optional[frame_mod.ColorEnum]
 
-    DIRECTORY: ClassVar[Type[frame.Directory]] = frame.TelephoneDirectory
+    DIRECTORY: ClassVar[Type[frame_mod.Directory]] = frame_mod.TelephoneDirectory
 
     DESCRIPTION: str = "Telephone"
 
@@ -89,13 +89,13 @@ class Telephone(Record):
         return info_str
 
     @classmethod
-    def from_frames(cls, frames: List[frame.Frame]) -> "Telephone":
+    def from_frames(cls, frames: List[frame_mod.Frame]) -> "Telephone":
         text = ""
-        color: Optional[frame.ColorEnum] = None
+        color: Optional[frame_mod.ColorEnum] = None
         for f in frames:
-            if isinstance(f, frame.Color):
+            if isinstance(f, frame_mod.Color):
                 color = f.enum
-            elif isinstance(f, frame.Text):
+            elif isinstance(f, frame_mod.Text):
                 text += f.text
             else:
                 raise ValueError(f"Unknown frame type: {type(f)}")
@@ -132,39 +132,43 @@ class Telephone(Record):
         if len(fields) > 8:
             field6 = fields[8]
         return cls(
-            color, name, number, address, field1, field2, field3, field4, field5, field6
+            name, number, address, field1, field2, field3, field4, field5, field6, color
         )
 
-    def to_frames(self) -> List[frame.Frame]:
-        text_list: List[str] = [self.name]
-        if self.number is not None:
-            text_list.append(self.number)
-        if self.address is not None:
-            text_list.append(self.address)
-        if self.field1 is not None:
-            text_list.append(self.field1)
-        if self.field2 is not None:
-            text_list.append(self.field2)
-        if self.field3 is not None:
-            text_list.append(self.field3)
-        if self.field4 is not None:
-            text_list.append(self.field4)
-        if self.field5 is not None:
-            text_list.append(self.field5)
-        if self.field6 is not None:
-            text_list.append(self.field6)
-        if self.color:
-            return [
-                frame.Color.from_color_enum(self.color),
-                *frame.Text.from_text_list(text_list),
-            ]
-        else:
-            return cast(List[frame.Frame], frame.Text.from_text_list(text_list))
+    def to_frames(self) -> List[frame_mod.Frame]:
+        raw_list: List[Optional[str]] = [self.name]
+        raw_list.append(self.number)
+        raw_list.append(self.address)
+        raw_list.append(self.field1)
+        raw_list.append(self.field2)
+        raw_list.append(self.field3)
+        raw_list.append(self.field4)
+        raw_list.append(self.field5)
+        raw_list.append(self.field6)
+
+        text_list: List[str] = []
+        data: bool = False
+        for e in reversed(raw_list):
+            if e is None:
+                if data:
+                    text_list.insert(0, "")
+                else:
+                    continue
+            else:
+                data = True
+                text_list.insert(0, e)
+
+        frames: List[frame_mod.Frame] = []
+        if self.color is not None:
+            frames.append(frame_mod.Color.from_color_enum(self.color))
+        frames.extend(frame_mod.Text.from_text_list(text_list))
+
+        return frames
 
 
 @dataclass
 class BusinessCard(Record):
-    color: Optional[frame.ColorEnum]
+    color: Optional[frame_mod.ColorEnum]
     employer: str
     name: str
     telephone_number: Optional[str]
@@ -176,7 +180,7 @@ class BusinessCard(Record):
     address: Optional[str]
     memo: Optional[str]
 
-    DIRECTORY: ClassVar[Type[frame.Directory]] = frame.BusinessCardDirectory
+    DIRECTORY: ClassVar[Type[frame_mod.Directory]] = frame_mod.BusinessCardDirectory
 
     DESCRIPTION: str = "Business Card"
 
@@ -184,13 +188,13 @@ class BusinessCard(Record):
         return f"Business Card: {repr(self.employer)}, {repr(self.name)}, {repr(self.telephone_number)}, {repr(self.telex_number)}, {repr(self.fax_number)}, {repr(self.position)}, {repr(self.department)}, {repr(self.po_box)}, {repr(self.address)}, {repr(self.memo)} ({self.color})"
 
     @classmethod
-    def from_frames(cls, frames: List[frame.Frame]) -> "BusinessCard":
+    def from_frames(cls, frames: List[frame_mod.Frame]) -> "BusinessCard":
         text = ""
-        color: Optional[frame.ColorEnum] = None
+        color: Optional[frame_mod.ColorEnum] = None
         for f in frames:
-            if isinstance(f, frame.Color):
+            if isinstance(f, frame_mod.Color):
                 color = f.enum
-            elif isinstance(f, frame.Text):
+            elif isinstance(f, frame_mod.Text):
                 text += f.text
             else:
                 raise ValueError(f"Unknown frame type: {type(f)}")
@@ -244,16 +248,16 @@ class BusinessCard(Record):
             memo,
         )
 
-    def to_frames(self) -> List[frame.Frame]:
+    def to_frames(self) -> List[frame_mod.Frame]:
         raise NotImplementedError
 
 
 @dataclass
 class Memo(Record):
-    color: Optional[frame.ColorEnum]
+    color: Optional[frame_mod.ColorEnum]
     text: str
 
-    DIRECTORY: ClassVar[Type[frame.Directory]] = frame.MemoDirectory
+    DIRECTORY: ClassVar[Type[frame_mod.Directory]] = frame_mod.MemoDirectory
 
     DESCRIPTION: str = "Memo"
 
@@ -261,20 +265,20 @@ class Memo(Record):
         return f"Memo: {repr(self.text)}"
 
     @classmethod
-    def from_frames(cls, frames: List[frame.Frame]) -> "Memo":
+    def from_frames(cls, frames: List[frame_mod.Frame]) -> "Memo":
         text = ""
-        color: Optional[frame.ColorEnum] = None
+        color: Optional[frame_mod.ColorEnum] = None
         for f in frames:
-            if isinstance(f, frame.Color):
+            if isinstance(f, frame_mod.Color):
                 color = f.enum
-            elif isinstance(f, frame.Text):
+            elif isinstance(f, frame_mod.Text):
                 text += f.text
             else:
                 raise ValueError(f"Unknown frame type: {type(f)}")
 
         return cls(color, text)
 
-    def to_frames(self) -> List[frame.Frame]:
+    def to_frames(self) -> List[frame_mod.Frame]:
         raise NotImplementedError
 
 
@@ -283,9 +287,9 @@ class Calendar(Record):
     year: int
     month: int
     highlighted_days: Set[int]
-    day_colors: Optional[List[frame.ColorEnum]]
+    day_colors: Optional[List[frame_mod.ColorEnum]]
 
-    DIRECTORY: ClassVar[Type[frame.Directory]] = frame.CalendarDirectory
+    DIRECTORY: ClassVar[Type[frame_mod.Directory]] = frame_mod.CalendarDirectory
 
     DESCRIPTION: str = "Calendar"
 
@@ -300,23 +304,23 @@ class Calendar(Record):
         return f"{self.DESCRIPTION}: " + " ".join(info_list)
 
     @classmethod
-    def from_frames(cls, frames: List[frame.Frame]) -> "Calendar":
+    def from_frames(cls, frames: List[frame_mod.Frame]) -> "Calendar":
         year: int = 0
         month: int = 0
         highlighted_days: Set[int] = set()
-        day_colors: Optional[List[frame.ColorEnum]] = None
+        day_colors: Optional[List[frame_mod.ColorEnum]] = None
         for f in frames:
-            if isinstance(f, frame.Date):
+            if isinstance(f, frame_mod.Date):
                 if f.year is None:
                     raise ValueError("Missing year")
                 year = f.year
                 if f.month is None:
                     raise ValueError("Missing month")
                 month = f.month
-            elif isinstance(f, frame.DayHighlight):
+            elif isinstance(f, frame_mod.DayHighlight):
                 for day in f.days:
                     highlighted_days.add(day)
-            elif isinstance(f, frame.DayColorHighlight):
+            elif isinstance(f, frame_mod.DayColorHighlight):
                 for date in f.days:
                     highlighted_days.add(date)
                 day_colors = f.colors
@@ -328,7 +332,7 @@ class Calendar(Record):
 
         return cls(year, month, highlighted_days, day_colors)
 
-    def to_frames(self) -> List[frame.Frame]:
+    def to_frames(self) -> List[frame_mod.Frame]:
         raise NotImplementedError
 
 
@@ -342,7 +346,7 @@ class ScheduleKeeper(Record):
     illustration: Optional[int]
     description: Optional[str]
 
-    DIRECTORY: ClassVar[Type[frame.Directory]] = frame.ScheduleKeeperDirectory
+    DIRECTORY: ClassVar[Type[frame_mod.Directory]] = frame_mod.ScheduleKeeperDirectory
 
     DESCRIPTION: str = "Schedule Keeper"
 
@@ -350,7 +354,7 @@ class ScheduleKeeper(Record):
         return f"Schedule Keeper: {self.date}, {self.start_time}, {self.end_time}, {self.alarm_time}, {self.illustration}, {self.description} ({self.color})"
 
     @classmethod
-    def from_frames(cls, frames: List[frame.Frame]) -> "ScheduleKeeper":
+    def from_frames(cls, frames: List[frame_mod.Frame]) -> "ScheduleKeeper":
         color: str = "Blue"
         date: Optional[datetime.date] = None
         start_time: Optional[datetime.time] = None
@@ -360,22 +364,22 @@ class ScheduleKeeper(Record):
         description: Optional[str] = None
 
         for f in frames:
-            if isinstance(f, frame.Color):
+            if isinstance(f, frame_mod.Color):
                 color = f.name
-            elif isinstance(f, frame.Date):
+            elif isinstance(f, frame_mod.Date):
                 date = f.date
-            elif isinstance(f, frame.StartEndTime):
+            elif isinstance(f, frame_mod.StartEndTime):
                 start_time = f.start_time
                 end_time = f.end_time
-            elif isinstance(f, frame.Alarm):
+            elif isinstance(f, frame_mod.Alarm):
                 alarm_time = f.time
-            elif isinstance(f, frame.Illustration):
+            elif isinstance(f, frame_mod.Illustration):
                 illustration = f.number
-            elif isinstance(f, frame.Text):
+            elif isinstance(f, frame_mod.Text):
                 if description is None:
                     description = ""
                 description += str(f.text)
-            elif isinstance(f, frame.Time):
+            elif isinstance(f, frame_mod.Time):
                 start_time = f.time
             else:
                 raise ValueError(f"Unknown frame type: {type(f)}")
@@ -395,7 +399,7 @@ class ScheduleKeeper(Record):
             description,
         )
 
-    def to_frames(self) -> List[frame.Frame]:
+    def to_frames(self) -> List[frame_mod.Frame]:
         raise NotImplementedError
 
 
@@ -408,7 +412,7 @@ class Reminder(Record):
     alarm_time: Optional[datetime.time]
     description: str
 
-    DIRECTORY: ClassVar[Type[frame.Directory]] = frame.ReminderDirectory
+    DIRECTORY: ClassVar[Type[frame_mod.Directory]] = frame_mod.ReminderDirectory
 
     DESCRIPTION: str = "Reminder"
 
@@ -434,7 +438,7 @@ class Reminder(Record):
         return info_str
 
     @classmethod
-    def from_frames(cls, frames: List[frame.Frame]) -> "Reminder":
+    def from_frames(cls, frames: List[frame_mod.Frame]) -> "Reminder":
         color: str = "Blue"
         year: Optional[int] = None
         month: Optional[int] = None
@@ -443,15 +447,15 @@ class Reminder(Record):
         description: str = ""
 
         for f in frames:
-            if isinstance(f, frame.Color):
+            if isinstance(f, frame_mod.Color):
                 color = f.name
-            elif isinstance(f, frame.Date):
+            elif isinstance(f, frame_mod.Date):
                 year = f.year
                 month = f.month
                 day = f.day
-            elif isinstance(f, frame.Alarm):
+            elif isinstance(f, frame_mod.Alarm):
                 alarm_time = f.time
-            elif isinstance(f, frame.Text):
+            elif isinstance(f, frame_mod.Text):
                 description = f.text
             else:
                 raise ValueError(f"Unknown frame type: {type(f)}")
@@ -461,7 +465,7 @@ class Reminder(Record):
 
         return cls(color, year, month, day, alarm_time, description)
 
-    def to_frames(self) -> List[frame.Frame]:
+    def to_frames(self) -> List[frame_mod.Frame]:
         raise NotImplementedError
 
 
@@ -473,9 +477,9 @@ class ToDo(Record):
     checked_date: Optional[datetime.date]
     checked_time: Optional[datetime.time]
     description: str
-    priority: frame.PriorityEnum
+    priority: frame_mod.PriorityEnum
 
-    DIRECTORY: ClassVar[Type[frame.Directory]] = frame.ToDoDirectory
+    DIRECTORY: ClassVar[Type[frame_mod.Directory]] = frame_mod.ToDoDirectory
 
     DESCRIPTION: str = "To Do"
 
@@ -496,29 +500,29 @@ class ToDo(Record):
         return info_str
 
     @classmethod
-    def from_frames(cls, frames: List[frame.Frame]) -> "ToDo":
+    def from_frames(cls, frames: List[frame_mod.Frame]) -> "ToDo":
         deadline_date: Optional[datetime.date] = None
         deadline_time: Optional[datetime.time] = None
         alarm: Optional[datetime.time] = None
         checked_date: Optional[datetime.date] = None
         checked_time: Optional[datetime.time] = None
         description: str = ""
-        priority: Optional[frame.PriorityEnum] = None
+        priority: Optional[frame_mod.PriorityEnum] = None
 
         for f in frames:
-            if isinstance(f, frame.DeadlineDate):
+            if isinstance(f, frame_mod.DeadlineDate):
                 deadline_date = f.date
-            elif isinstance(f, frame.DeadlineTime):
+            elif isinstance(f, frame_mod.DeadlineTime):
                 deadline_time = f.time
-            elif isinstance(f, frame.ToDoAlarm):
+            elif isinstance(f, frame_mod.ToDoAlarm):
                 alarm = f.time
-            elif isinstance(f, frame.Date):
+            elif isinstance(f, frame_mod.Date):
                 checked_date = f.date
-            elif isinstance(f, frame.Time):
+            elif isinstance(f, frame_mod.Time):
                 checked_time = f.time
-            elif isinstance(f, frame.Text):
+            elif isinstance(f, frame_mod.Text):
                 description = f.text
-            elif isinstance(f, frame.Priority):
+            elif isinstance(f, frame_mod.Priority):
                 priority = f.enum
             else:
                 raise ValueError(f"Unknown frame type: {type(f)}")
@@ -539,7 +543,7 @@ class ToDo(Record):
             priority,
         )
 
-    def to_frames(self) -> List[frame.Frame]:
+    def to_frames(self) -> List[frame_mod.Frame]:
         raise NotImplementedError
 
 
@@ -554,7 +558,7 @@ class Expense(Record):
     bus: Optional[str]  # Empty for CSF-8950
     description: Optional[str]
 
-    DIRECTORY: ClassVar[Type[frame.Directory]] = frame.ExpenseManagerDirectory
+    DIRECTORY: ClassVar[Type[frame_mod.Directory]] = frame_mod.ExpenseManagerDirectory
 
     DESCRIPTION: str = "Expense"
 
@@ -574,13 +578,13 @@ class Expense(Record):
         return info_str
 
     @classmethod
-    def from_frames(cls, frames: List[frame.Frame]) -> "Expense":
+    def from_frames(cls, frames: List[frame_mod.Frame]) -> "Expense":
         text = ""
         color = "Blue"
         for f in frames:
-            if isinstance(f, frame.Color):
+            if isinstance(f, frame_mod.Color):
                 color = f.name
-            elif isinstance(f, frame.Text):
+            elif isinstance(f, frame_mod.Text):
                 text += f.text
             else:
                 raise ValueError(f"Unknown frame type: {type(f)}")
@@ -626,5 +630,5 @@ class Expense(Record):
             color, date, amount, payment_type, expense_type, rcpt, bus, description
         )
 
-    def to_frames(self) -> List[frame.Frame]:
+    def to_frames(self) -> List[frame_mod.Frame]:
         raise NotImplementedError
