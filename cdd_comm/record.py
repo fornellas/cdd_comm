@@ -306,7 +306,13 @@ class Memo(Record):
         return cls(text, color)
 
     def to_frames(self) -> List[frame_mod.Frame]:
-        raise NotImplementedError
+        frames: List[frame_mod.Frame] = []
+
+        if self.color is not None:
+            frames.append(frame_mod.Color.from_color_enum(self.color))
+        frames.extend(frame_mod.Text.from_text_list([self.text]))
+
+        return frames
 
 
 @dataclass

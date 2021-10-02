@@ -433,3 +433,32 @@ class BusinessCardTest(TestCase):
             memo=self.MEMO,
             color=self.COLOR,
         )
+
+
+class MemoTest(TestCase):
+    TEXT: str = "Hello\nWorld"
+    COLOR: frame_mod.ColorEnum = frame_mod.ColorEnum.GREEN
+
+    def _get_frames(
+        self, text: str, color: Optional[frame_mod.ColorEnum]
+    ) -> List[frame_mod.Frame]:
+        frames: List[frame_mod.Frame] = []
+        if color is not None:
+            frames.append(frame_mod.Color.from_color_enum(color))
+        frames.extend(frame_mod.Text.from_text_list([text]))
+        return frames
+
+    def test_from_frames(self) -> None:
+        memo = record_mod.Memo.from_frames(self._get_frames(self.TEXT, self.COLOR))
+        self.assertEqual(memo.text, self.TEXT)
+        self.assertEqual(memo.color, self.COLOR)
+
+        memo = record_mod.Memo.from_frames(self._get_frames(self.TEXT, None))
+        self.assertEqual(memo.text, self.TEXT)
+        self.assertEqual(memo.color, None)
+
+    def test_to_frames(self) -> None:
+        self.assertEqual(
+            record_mod.Memo(self.TEXT, self.COLOR).to_frames(),
+            self._get_frames(self.TEXT, self.COLOR),
+        )
