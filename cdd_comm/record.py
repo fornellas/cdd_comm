@@ -316,8 +316,8 @@ class Memo(Record):
 class Calendar(Record):
     year: int
     month: int
-    highlighted_days: Set[int]
-    day_colors: Optional[List[frame_mod.ColorEnum]]
+    days: Set[int]
+    colors: Optional[List[frame_mod.ColorEnum]]
 
     DIRECTORY: ClassVar[Type[frame_mod.Directory]] = frame_mod.CalendarDirectory
 
@@ -327,9 +327,9 @@ class Calendar(Record):
         info_list = []
         for date in range(1, 32):
             color = ""
-            if self.day_colors:
-                color = self.day_colors[date - 1].name[0].lower()
-            highlight = "*" if date in self.highlighted_days else ""
+            if self.colors:
+                color = self.colors[date - 1].name[0].lower()
+            highlight = "*" if date in self.days else ""
             info_list.append(f"{date}{color}{highlight}")
         return f"{self.DESCRIPTION}: " + " ".join(info_list)
 
@@ -337,8 +337,8 @@ class Calendar(Record):
     def from_frames(cls, frames: List[frame_mod.Frame]) -> "Calendar":
         year: int = 0
         month: int = 0
-        highlighted_days: Set[int] = set()
-        day_colors: Optional[List[frame_mod.ColorEnum]] = None
+        days: Set[int] = set()
+        colors: Optional[List[frame_mod.ColorEnum]] = None
         for f in frames:
             if isinstance(f, frame_mod.Date):
                 if f.year is None:
@@ -349,21 +349,32 @@ class Calendar(Record):
                 month = f.month
             elif isinstance(f, frame_mod.DayHighlight):
                 for day in f.days:
-                    highlighted_days.add(day)
+                    days.add(day)
             elif isinstance(f, frame_mod.DayColorHighlight):
                 for date in f.days:
-                    highlighted_days.add(date)
-                day_colors = f.colors
+                    days.add(date)
+                colors = f.colors
             else:
                 raise ValueError(f"Unknown frame type: {type(f)}")
 
         if year == 0 or month == 0:
             raise ValueError("Missing Date frame")
 
-        return cls(year, month, highlighted_days, day_colors)
+        return cls(year, month, days, colors)
 
     def to_frames(self) -> List[frame_mod.Frame]:
-        raise NotImplementedError
+        frames: List[frame_mod.Frame] = []
+
+        frames.append(frame_mod.Date.from_date(datetime.date(self.year, self.month, 1)))
+        frames.append(frame_mod.DayHighlight.from_days(self.days))
+        if self.colors is not None:
+            frames.append(
+                frame_mod.DayColorHighlight.from_days_and_colors(
+                    self.days,
+                    self.colors,
+                )
+            )
+        return frames
 
 
 @dataclass

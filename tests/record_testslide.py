@@ -1,4 +1,5 @@
-from typing import List, Optional
+import datetime
+from typing import List, Optional, Set
 
 from testslide import TestCase
 
@@ -465,43 +466,102 @@ class MemoTest(TestCase):
 
 
 class CalendarTest(TestCase):
-    def test_from_frames(self) -> None:
-        year = 2021
-        month = 12
-        days = {1, 10, 19, 28}
+    YEAR: int = 2021
+    MONTH: int = 12
+    DAYS: Set[int] = {1, 10, 19, 28}
+    COLORS: List[frame_mod.ColorEnum] = (
+        [frame_mod.ColorEnum.BLUE] * 10
+        + [frame_mod.ColorEnum.GREEN] * 10
+        + [frame_mod.ColorEnum.ORANGE] * 11
+    )
 
+    def _get_frames(
+        self,
+        year: int,
+        month: int,
+        days: Set[int],
+        colors: Optional[List[frame_mod.ColorEnum]],
+    ) -> List[frame_mod.Frame]:
         frames: List[frame_mod.Frame] = []
-        frames.append(
-            frame_mod.Date(
-                length=frame_mod.Date.LENGTH,
-                frame_type=frame_mod.Date.TYPE,
-                address=frame_mod.Date.ADDRESS,
-                data=[ord(c) for c in f"{year}-{month}-30"],
-                checksum=0,
-            )
-        )
+        frames.append(frame_mod.Date.from_date(datetime.date(year, month, 1)))
         frames.append(frame_mod.DayHighlight.from_days(days))
+        if colors is not None:
+            frames.append(
+                frame_mod.DayColorHighlight.from_days_and_colors(
+                    days,
+                    colors,
+                )
+            )
+        return frames
 
-        calendar = record_mod.Calendar.from_frames(frames)
-        self.assertEqual(calendar.year, year)
-        self.assertEqual(calendar.month, month)
-        self.assertEqual(calendar.highlighted_days, days)
-        self.assertEqual(calendar.day_colors, None)
-
-        day_colors: List[frame_mod.ColorEnum] = (
-            [frame_mod.ColorEnum.BLUE] * 10
-            + [frame_mod.ColorEnum.GREEN] * 10
-            + [frame_mod.ColorEnum.ORANGE] * 11
-        )
-        frames.append(
-            frame_mod.DayColorHighlight.from_days_and_colors(
-                days,
-                day_colors,
+    def test_from_frames(self) -> None:
+        calendar = record_mod.Calendar.from_frames(
+            self._get_frames(
+                year=self.YEAR,
+                month=self.MONTH,
+                days=self.DAYS,
+                colors=None,
             )
         )
+        self.assertEqual(calendar.year, self.YEAR)
+        self.assertEqual(calendar.month, self.MONTH)
+        self.assertEqual(calendar.days, self.DAYS)
+        self.assertEqual(calendar.colors, None)
 
-        calendar = record_mod.Calendar.from_frames(frames)
-        self.assertEqual(calendar.year, year)
-        self.assertEqual(calendar.month, month)
-        self.assertEqual(calendar.highlighted_days, days)
-        self.assertEqual(calendar.day_colors, day_colors)
+        calendar = record_mod.Calendar.from_frames(
+            self._get_frames(
+                year=self.YEAR,
+                month=self.MONTH,
+                days=self.DAYS,
+                colors=self.COLORS,
+            )
+        )
+        self.assertEqual(calendar.year, self.YEAR)
+        self.assertEqual(calendar.month, self.MONTH)
+        self.assertEqual(calendar.days, self.DAYS)
+        self.assertEqual(calendar.colors, self.COLORS)
+
+    def test_to_frames(self) -> None:
+        self.assertEqual(
+            record_mod.Calendar(self.YEAR, self.MONTH, self.DAYS, None).to_frames(),
+            self._get_frames(
+                year=self.YEAR,
+                month=self.MONTH,
+                days=self.DAYS,
+                colors=None,
+            ),
+        )
+
+        self.assertEqual(
+            record_mod.Calendar(
+                self.YEAR, self.MONTH, self.DAYS, self.COLORS
+            ).to_frames(),
+            self._get_frames(
+                year=self.YEAR,
+                month=self.MONTH,
+                days=self.DAYS,
+                colors=self.COLORS,
+            ),
+        )
+
+
+# class ScheduleTest(TestCase):
+#     def test_from_frames(self) -> None:
+#         pass
+#     def test_to_frames(self) -> None:
+#         pass
+# class ReminderTest(TestCase):
+#     def test_from_frames(self) -> None:
+#         pass
+#     def test_to_frames(self) -> None:
+#         pass
+# class ToDoTest(TestCase):
+#     def test_from_frames(self) -> None:
+#         pass
+#     def test_to_frames(self) -> None:
+#         pass
+# class ExpenseTest(TestCasselfe): -> None:
+#         pass
+#     def test_to_frames(self) -> None:
+#         pass
+#     def test_from_frames()

@@ -466,6 +466,20 @@ class Date(TextDataFrame):
             day = None
         return (year, month, day)
 
+    @classmethod
+    def from_date(cls, date: datetime.date) -> "Date":
+        data: List[int] = [
+            cls.UNICODE_TO_CASIO[c]
+            for c in "%.4d-%.2d-%.2d" % (date.year, date.month, date.day)
+        ]
+        return cls(
+            length=cls.LENGTH,
+            frame_type=cls.TYPE,
+            address=cls.ADDRESS,
+            data=data,
+            checksum=cls.calculate_checksum(cls.LENGTH, cls.TYPE, cls.ADDRESS, data),
+        )
+
     @property
     def year(self) -> Optional[int]:
         year, month, day = self._get_date()

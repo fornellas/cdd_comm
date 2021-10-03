@@ -173,6 +173,16 @@ class DateTest(TestCase):
     TYPE: ClassVar[int] = frame_mod.Date.TYPE
     ADDRESS: ClassVar[int] = frame_mod.Date.ADDRESS
 
+    def test_from_date(self) -> None:
+        year = 2023
+        month = 12
+        day = 30
+        date = frame_mod.Date.from_date(datetime.date(year, month, day))
+        self.assertEqual(date.year, year)
+        self.assertEqual(date.month, month)
+        self.assertEqual(date.month, month)
+        self.assertEqual(date.day, day)
+
     def _get_date(self, date_str: str) -> frame_mod.Date:
         return cast(
             frame_mod.Date,
