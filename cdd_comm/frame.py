@@ -611,6 +611,25 @@ class DayHighlight(Frame):
             return True
         return False
 
+    @classmethod
+    def from_days(cls, days: Set[int]) -> "DayHighlight":
+        data: List[int] = [0] * cls.LENGTH
+
+        for day in days:
+            byte: int = int((day - 1) / 8)
+            bit: int = (day - 1) % 8
+            data[byte] |= 1 << bit
+
+        data = list(reversed(data))
+
+        return cls(
+            length=cls.LENGTH,
+            frame_type=cls.TYPE,
+            address=cls.ADDRESS,
+            data=data,
+            checksum=cls.calculate_checksum(cls.LENGTH, cls.TYPE, cls.ADDRESS, data),
+        )
+
     @property
     def days(self) -> Set[int]:
         days: List[int] = []
@@ -635,6 +654,36 @@ class DayColorHighlight(Frame):
         if length == cls.LENGTH and frame_type == cls.TYPE and address == cls.ADDRESS:
             return True
         return False
+
+    @classmethod
+    def from_days_and_colors(
+        cls, days: Set[int], colors: List[ColorEnum]
+    ) -> "DayColorHighlight":
+        data: List[int] = [0] * cls.LENGTH
+
+        if len(days) > cls.LENGTH:
+            raise ValueError("invalid days lengths")
+        if len(colors) >= cls.LENGTH:
+            raise ValueError(f"invalid colors length: {len(colors)}")
+
+        for day in days:
+            if day < 0 or day > 31:
+                raise ValueError("invalid day")
+            idx = day - 1
+            data[idx] |= 0x80
+
+        for idx, color in enumerate(colors):
+            data[idx] |= color.value
+
+        data = list(reversed(data))
+
+        return cls(
+            length=cls.LENGTH,
+            frame_type=cls.TYPE,
+            address=cls.ADDRESS,
+            data=data,
+            checksum=cls.calculate_checksum(cls.LENGTH, cls.TYPE, cls.ADDRESS, data),
+        )
 
     def _get_day_color_highlight(self) -> List[Tuple[ColorEnum, bool]]:
         color_highlight: List[Tuple[ColorEnum, bool]] = []

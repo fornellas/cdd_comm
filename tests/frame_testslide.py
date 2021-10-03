@@ -1,5 +1,5 @@
 import datetime
-from typing import ClassVar, List, Type, cast
+from typing import ClassVar, List, Set, Type, cast
 
 from testslide import TestCase
 
@@ -341,13 +341,17 @@ class DayHighlightTest(TestCase):
                 length=frame_mod.DayHighlight.LENGTH,
                 frame_type=frame_mod.DayHighlight.TYPE,
                 address=frame_mod.DayHighlight.ADDRESS,
-                data=[2, 1, 0, 3],
+                data=[8, 4, 2, 1],
                 checksum=0,
             ),
         )
 
+    def test_from_days(self) -> None:
+        days: Set[int] = {1, 8, 9, 19, 28}
+        self.assertEqual(frame_mod.DayHighlight.from_days(days).days, days)
+
     def test_days(self) -> None:
-        self.assertEqual(self.frame.days, {17, 26, 2, 1})
+        self.assertEqual(self.frame.days, {1, 10, 19, 28})
 
     def test_match(self) -> None:
         self.assertTrue(isinstance(self.frame, frame_mod.DayHighlight))
@@ -376,6 +380,19 @@ class DayColorHighlightTest(TestCase):
                 checksum=0,
             ),
         )
+
+    def test_from_days_and_colors(self) -> None:
+        days: Set[int] = {1, 8, 9, 19, 28}
+        colors: List[frame_mod.ColorEnum] = (
+            [frame_mod.ColorEnum.BLUE] * 10
+            + [frame_mod.ColorEnum.GREEN] * 10
+            + [frame_mod.ColorEnum.ORANGE] * 11
+        )
+        day_color_highlight = frame_mod.DayColorHighlight.from_days_and_colors(
+            days, colors
+        )
+        self.assertEqual(day_color_highlight.days, days)
+        self.assertEqual(day_color_highlight.colors, colors)
 
     def test_days(self) -> None:
         self.assertEqual(

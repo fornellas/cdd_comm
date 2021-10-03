@@ -22,11 +22,8 @@ def _raw_list_to_text_list(raw_list: List[Optional[str]]) -> List[str]:
 
 
 class Record(ABC):
-
     DESCRIPTION: str = "Record"
-
     DIRECTORY: ClassVar[Type[frame_mod.Directory]]
-
     DIRECTORY_TO_RECORD: Dict[Type[frame_mod.Directory], Type["Record"]] = {}
 
     def __init_subclass__(cls) -> None:

@@ -462,3 +462,46 @@ class MemoTest(TestCase):
             record_mod.Memo(self.TEXT, self.COLOR).to_frames(),
             self._get_frames(self.TEXT, self.COLOR),
         )
+
+
+class CalendarTest(TestCase):
+    def test_from_frames(self) -> None:
+        year = 2021
+        month = 12
+        days = {1, 10, 19, 28}
+
+        frames: List[frame_mod.Frame] = []
+        frames.append(
+            frame_mod.Date(
+                length=frame_mod.Date.LENGTH,
+                frame_type=frame_mod.Date.TYPE,
+                address=frame_mod.Date.ADDRESS,
+                data=[ord(c) for c in f"{year}-{month}-30"],
+                checksum=0,
+            )
+        )
+        frames.append(frame_mod.DayHighlight.from_days(days))
+
+        calendar = record_mod.Calendar.from_frames(frames)
+        self.assertEqual(calendar.year, year)
+        self.assertEqual(calendar.month, month)
+        self.assertEqual(calendar.highlighted_days, days)
+        self.assertEqual(calendar.day_colors, None)
+
+        day_colors: List[frame_mod.ColorEnum] = (
+            [frame_mod.ColorEnum.BLUE] * 10
+            + [frame_mod.ColorEnum.GREEN] * 10
+            + [frame_mod.ColorEnum.ORANGE] * 11
+        )
+        frames.append(
+            frame_mod.DayColorHighlight.from_days_and_colors(
+                days,
+                day_colors,
+            )
+        )
+
+        calendar = record_mod.Calendar.from_frames(frames)
+        self.assertEqual(calendar.year, year)
+        self.assertEqual(calendar.month, month)
+        self.assertEqual(calendar.highlighted_days, days)
+        self.assertEqual(calendar.day_colors, day_colors)
