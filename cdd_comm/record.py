@@ -391,6 +391,14 @@ class Schedule(Record):
 
     DESCRIPTION: str = "Schedule"
 
+    def __post_init__(self):
+        if self.start_time is None and self.description is None:
+            raise ValueError("either start time or description must be set")
+        if self.end_time is not None and self.start_time:
+            raise ValueError("can't set end time without start time")
+        if self.alarm_time is not None and self.start_time is None:
+            raise ValueError("cant set alarm time without start time")
+
     def __str__(self) -> str:
         return f"Schedule: {self.date}, {self.start_time}, {self.end_time}, {self.alarm_time}, {self.illustration}, {self.description} ({self.color})"
 
