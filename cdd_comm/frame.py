@@ -185,7 +185,7 @@ class ExpenseManagerDirectory(Directory):
 # Others
 
 
-class ColorEnum(Enum):
+class Colors(Enum):
     BLUE: int = 0x1
     ORANGE: int = 0x2
     GREEN: int = 0x4
@@ -196,23 +196,21 @@ class Color(Frame):
     LENGTH: ClassVar[int] = 0x1
     TYPE: ClassVar[int] = 0x71
     ADDRESS: ClassVar[int] = 0x0
-    _CODE_TO_COLOR: Dict[int, ColorEnum] = {
-        color.value: color for color in list(ColorEnum)
-    }
-    _COLOR_TO_CODE: Dict[ColorEnum, int] = {
+    _CODE_TO_COLOR: Dict[int, Colors] = {color.value: color for color in list(Colors)}
+    _COLOR_TO_CODE: Dict[Colors, int] = {
         color: code for code, color in _CODE_TO_COLOR.items()
     }
 
     @property
-    def enum(self) -> ColorEnum:
+    def color(self) -> Colors:
         return self._CODE_TO_COLOR[self.data[0]]
 
     @property
     def name(self) -> str:
-        return self.enum.name
+        return self.color.name
 
     @classmethod
-    def from_color_enum(cls, color: ColorEnum) -> "Color":
+    def from_color(cls, color: Colors) -> "Color":
         data = [cls._COLOR_TO_CODE[color]]
         return cls(
             cls.LENGTH,
@@ -566,7 +564,7 @@ class Alarm(Time):
     TYPE: ClassVar[int] = 0xC0
 
 
-class PriorityEnum(Enum):
+class Priorities(Enum):
     A: int = 0x10
     B: int = 0x20
     C: int = 0x30
@@ -577,28 +575,28 @@ class Priority(Frame):
     LENGTH: ClassVar[int] = 0x1
     TYPE: ClassVar[int] = 0x72
     ADDRESS: ClassVar[int] = 0x0
-    _CODE_TO_PRIORITY: Dict[int, PriorityEnum] = {
-        priority.value: priority for priority in list(PriorityEnum)
+    _CODE_TO_PRIORITY: Dict[int, Priorities] = {
+        priority.value: priority for priority in list(Priorities)
     }
-    _PRIORITY_TO_CODE: Dict[PriorityEnum, int] = {
+    _PRIORITY_TO_CODE: Dict[Priorities, int] = {
         priority: code for code, priority in _CODE_TO_PRIORITY.items()
     }
-    _PRIORITY_TO_COLOR: Dict[PriorityEnum, ColorEnum] = {
-        PriorityEnum.A: ColorEnum.ORANGE,
-        PriorityEnum.B: ColorEnum.BLUE,
-        PriorityEnum.C: ColorEnum.GREEN,
+    _PRIORITY_TO_COLOR: Dict[Priorities, Colors] = {
+        Priorities.A: Colors.ORANGE,
+        Priorities.B: Colors.BLUE,
+        Priorities.C: Colors.GREEN,
     }
 
     @property
-    def color(self) -> ColorEnum:
-        return self._PRIORITY_TO_COLOR[self.enum]
+    def color(self) -> Colors:
+        return self._PRIORITY_TO_COLOR[self.priority]
 
     @property
-    def enum(self) -> PriorityEnum:
+    def priority(self) -> Priorities:
         return self._CODE_TO_PRIORITY[self.data[0]]
 
     @classmethod
-    def from_priority_enum(cls, priority: PriorityEnum) -> "Priority":
+    def from_priority(cls, priority: Priorities) -> "Priority":
         data = [cls._PRIORITY_TO_CODE[priority]]
         return cls(
             cls.LENGTH,
@@ -620,7 +618,7 @@ class Priority(Frame):
         return False
 
     def __str__(self) -> str:
-        return f"{self.DESCRIPTION}: {self.enum.name}"
+        return f"{self.DESCRIPTION}: {self.priority.name}"
 
 
 class DayHighlight(Frame):
@@ -681,7 +679,7 @@ class DayColorHighlight(Frame):
 
     @classmethod
     def from_days_and_colors(
-        cls, days: Set[int], colors: List[ColorEnum]
+        cls, days: Set[int], colors: List[Colors]
     ) -> "DayColorHighlight":
         data: List[int] = [0] * cls.LENGTH
 
@@ -709,18 +707,18 @@ class DayColorHighlight(Frame):
             checksum=cls.calculate_checksum(cls.LENGTH, cls.TYPE, cls.ADDRESS, data),
         )
 
-    def _get_day_color_highlight(self) -> List[Tuple[ColorEnum, bool]]:
-        color_highlight: List[Tuple[ColorEnum, bool]] = []
+    def _get_day_color_highlight(self) -> List[Tuple[Colors, bool]]:
+        color_highlight: List[Tuple[Colors, bool]] = []
         for info in reversed(self.data):
-            color_enum: ColorEnum
-            for color_enum_candidate in list(ColorEnum):
-                if info & color_enum_candidate.value:
-                    color_enum = color_enum_candidate
+            color: Colors
+            for color_candidate in list(Colors):
+                if info & color_candidate.value:
+                    color = color_candidate
                     break
             highlight: bool = False
             if info & 0x80:
                 highlight = True
-            color_highlight.append((color_enum, highlight))
+            color_highlight.append((color, highlight))
         return color_highlight
 
     @property
@@ -736,8 +734,8 @@ class DayColorHighlight(Frame):
         return highlighted_dates
 
     @property
-    def colors(self) -> List[ColorEnum]:
-        day_colors: List[ColorEnum] = []
+    def colors(self) -> List[Colors]:
+        day_colors: List[Colors] = []
         for idx, value in enumerate(self._get_day_color_highlight()):
             color, _highlight = value
             date = idx + 1

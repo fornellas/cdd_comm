@@ -51,7 +51,7 @@ class Telephone(Record):
     field4: Optional[str]
     field5: Optional[str]
     field6: Optional[str]
-    color: Optional[frame_mod.ColorEnum]
+    color: Optional[frame_mod.Colors]
 
     DIRECTORY: ClassVar[Type[frame_mod.Directory]] = frame_mod.TelephoneDirectory
 
@@ -103,10 +103,10 @@ class Telephone(Record):
     @classmethod
     def from_frames(cls, frames: List[frame_mod.Frame]) -> "Telephone":
         text = ""
-        color: Optional[frame_mod.ColorEnum] = None
+        color: Optional[frame_mod.Colors] = None
         for f in frames:
             if isinstance(f, frame_mod.Color):
-                color = f.enum
+                color = f.color
             elif isinstance(f, frame_mod.Text):
                 text += f.text
             else:
@@ -164,7 +164,7 @@ class Telephone(Record):
 
         frames: List[frame_mod.Frame] = []
         if self.color is not None:
-            frames.append(frame_mod.Color.from_color_enum(self.color))
+            frames.append(frame_mod.Color.from_color(self.color))
         frames.extend(frame_mod.Text.from_text_list(text_list))
 
         return frames
@@ -182,7 +182,7 @@ class BusinessCard(Record):
     po_box: Optional[str]
     address: Optional[str]
     memo: Optional[str]
-    color: Optional[frame_mod.ColorEnum]
+    color: Optional[frame_mod.Colors]
 
     DIRECTORY: ClassVar[Type[frame_mod.Directory]] = frame_mod.BusinessCardDirectory
 
@@ -194,10 +194,10 @@ class BusinessCard(Record):
     @classmethod
     def from_frames(cls, frames: List[frame_mod.Frame]) -> "BusinessCard":
         text = ""
-        color: Optional[frame_mod.ColorEnum] = None
+        color: Optional[frame_mod.Colors] = None
         for f in frames:
             if isinstance(f, frame_mod.Color):
-                color = f.enum
+                color = f.color
             elif isinstance(f, frame_mod.Text):
                 text += f.text
             else:
@@ -270,7 +270,7 @@ class BusinessCard(Record):
 
         frames: List[frame_mod.Frame] = []
         if self.color is not None:
-            frames.append(frame_mod.Color.from_color_enum(self.color))
+            frames.append(frame_mod.Color.from_color(self.color))
         frames.extend(frame_mod.Text.from_text_list(text_list))
 
         return frames
@@ -279,7 +279,7 @@ class BusinessCard(Record):
 @dataclass
 class Memo(Record):
     text: str
-    color: Optional[frame_mod.ColorEnum]
+    color: Optional[frame_mod.Colors]
 
     DIRECTORY: ClassVar[Type[frame_mod.Directory]] = frame_mod.MemoDirectory
 
@@ -291,10 +291,10 @@ class Memo(Record):
     @classmethod
     def from_frames(cls, frames: List[frame_mod.Frame]) -> "Memo":
         text = ""
-        color: Optional[frame_mod.ColorEnum] = None
+        color: Optional[frame_mod.Colors] = None
         for f in frames:
             if isinstance(f, frame_mod.Color):
-                color = f.enum
+                color = f.color
             elif isinstance(f, frame_mod.Text):
                 text += f.text
             else:
@@ -306,7 +306,7 @@ class Memo(Record):
         frames: List[frame_mod.Frame] = []
 
         if self.color is not None:
-            frames.append(frame_mod.Color.from_color_enum(self.color))
+            frames.append(frame_mod.Color.from_color(self.color))
         frames.extend(frame_mod.Text.from_text_list([self.text]))
 
         return frames
@@ -317,7 +317,7 @@ class Calendar(Record):
     year: int
     month: int
     days: Set[int]
-    colors: Optional[List[frame_mod.ColorEnum]]
+    colors: Optional[List[frame_mod.Colors]]
 
     DIRECTORY: ClassVar[Type[frame_mod.Directory]] = frame_mod.CalendarDirectory
 
@@ -338,7 +338,7 @@ class Calendar(Record):
         year: int = 0
         month: int = 0
         days: Set[int] = set()
-        colors: Optional[List[frame_mod.ColorEnum]] = None
+        colors: Optional[List[frame_mod.Colors]] = None
         for f in frames:
             if isinstance(f, frame_mod.Date):
                 if f.year is None:
@@ -385,7 +385,7 @@ class Schedule(Record):
     alarm_time: Optional[datetime.time]
     illustration: Optional[int]
     description: Optional[str]
-    color: Optional[frame_mod.ColorEnum]
+    color: Optional[frame_mod.Colors]
 
     DIRECTORY: ClassVar[Type[frame_mod.Directory]] = frame_mod.ScheduleDirectory
 
@@ -404,7 +404,7 @@ class Schedule(Record):
 
     @classmethod
     def from_frames(cls, frames: List[frame_mod.Frame]) -> "Schedule":
-        color: Optional[frame_mod.ColorEnum] = None
+        color: Optional[frame_mod.Colors] = None
         date: Optional[datetime.date] = None
         start_time: Optional[datetime.time] = None
         end_time: Optional[datetime.time] = None
@@ -414,7 +414,7 @@ class Schedule(Record):
 
         for f in frames:
             if isinstance(f, frame_mod.Color):
-                color = f.enum
+                color = f.color
             elif isinstance(f, frame_mod.Date):
                 date = f.date
             elif isinstance(f, frame_mod.StartEndTime):
@@ -468,7 +468,7 @@ class Schedule(Record):
             frames.append(frame_mod.Illustration.from_number(self.illustration))
 
         if self.color is not None:
-            frames.append(frame_mod.Color.from_color_enum(self.color))
+            frames.append(frame_mod.Color.from_color(self.color))
 
         if self.description is not None:
             frames.extend(frame_mod.Text.from_text(self.description))
@@ -483,7 +483,7 @@ class Reminder(Record):
     day: Optional[int]
     alarm_time: Optional[datetime.time]
     description: str
-    color: Optional[frame_mod.ColorEnum]
+    color: Optional[frame_mod.Colors]
 
     DIRECTORY: ClassVar[Type[frame_mod.Directory]] = frame_mod.ReminderDirectory
 
@@ -512,7 +512,7 @@ class Reminder(Record):
 
     @classmethod
     def from_frames(cls, frames: List[frame_mod.Frame]) -> "Reminder":
-        color: Optional[frame_mod.ColorEnum] = None
+        color: Optional[frame_mod.Colors] = None
         year: Optional[int] = None
         month: Optional[int] = None
         day: Optional[int] = None
@@ -521,7 +521,7 @@ class Reminder(Record):
 
         for f in frames:
             if isinstance(f, frame_mod.Color):
-                color = f.enum
+                color = f.color
             elif isinstance(f, frame_mod.Date):
                 year = f.year
                 month = f.month
@@ -550,7 +550,7 @@ class ToDo(Record):
     checked_date: Optional[datetime.date]
     checked_time: Optional[datetime.time]
     description: str
-    priority: frame_mod.PriorityEnum
+    priority: frame_mod.Priorities
 
     DIRECTORY: ClassVar[Type[frame_mod.Directory]] = frame_mod.ToDoDirectory
 
@@ -580,7 +580,7 @@ class ToDo(Record):
         checked_date: Optional[datetime.date] = None
         checked_time: Optional[datetime.time] = None
         description: str = ""
-        priority: Optional[frame_mod.PriorityEnum] = None
+        priority: Optional[frame_mod.Priorities] = None
 
         for f in frames:
             if isinstance(f, frame_mod.DeadlineDate):
@@ -596,7 +596,7 @@ class ToDo(Record):
             elif isinstance(f, frame_mod.Text):
                 description = f.text
             elif isinstance(f, frame_mod.Priority):
-                priority = f.enum
+                priority = f.priority
             else:
                 raise ValueError(f"Unknown frame type: {type(f)}")
 
@@ -629,7 +629,7 @@ class Expense(Record):
     rcpt: Optional[str]  # Empty for CSF-8950
     bus: Optional[str]  # Empty for CSF-8950
     description: Optional[str]
-    color: Optional[frame_mod.ColorEnum]
+    color: Optional[frame_mod.Colors]
 
     DIRECTORY: ClassVar[Type[frame_mod.Directory]] = frame_mod.ExpenseManagerDirectory
 
@@ -653,10 +653,10 @@ class Expense(Record):
     @classmethod
     def from_frames(cls, frames: List[frame_mod.Frame]) -> "Expense":
         text = ""
-        color: Optional[frame_mod.ColorEnum] = None
+        color: Optional[frame_mod.Colors] = None
         for f in frames:
             if isinstance(f, frame_mod.Color):
-                color = f.enum
+                color = f.color
             elif isinstance(f, frame_mod.Text):
                 text += f.text
             else:

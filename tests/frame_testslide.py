@@ -150,19 +150,19 @@ class DirectoryTest(TestCase):
 
 
 class ColorTest(TestCase):
-    def test_from_color_enum(self) -> None:
-        for color_enum in list(frame_mod.ColorEnum):
-            frame = frame_mod.Color.from_color_enum(color_enum)
-            self.assertEqual(frame.enum, color_enum)
-            self.assertEqual(frame.name, color_enum.name)
+    def test_from_color(self) -> None:
+        for color in list(frame_mod.Colors):
+            frame = frame_mod.Color.from_color(color)
+            self.assertEqual(frame.color, color)
+            self.assertEqual(frame.name, color.name)
 
     def test_match(self) -> None:
-        for color_enum in list(frame_mod.ColorEnum):
+        for color in list(frame_mod.Colors):
             frame = frame_mod.Frame.from_data(
                 length=frame_mod.Color.LENGTH,
                 frame_type=frame_mod.Color.TYPE,
                 address=frame_mod.Color.ADDRESS,
-                data=[color_enum.value],
+                data=[color.value],
                 checksum=0,
             )
             self.assertTrue(isinstance(frame, frame_mod.Color))
@@ -305,48 +305,46 @@ class AlarmTest(TimeTest):
 
 
 class PriorityTest(TestCase):
-    def _get_priority(
-        self, priority_enum: frame_mod.PriorityEnum
-    ) -> frame_mod.Priority:
+    def _get_priority(self, priority: frame_mod.Priorities) -> frame_mod.Priority:
         return cast(
             frame_mod.Priority,
             frame_mod.Frame.from_data(
                 length=frame_mod.Priority.LENGTH,
                 frame_type=frame_mod.Priority.TYPE,
                 address=frame_mod.Priority.ADDRESS,
-                data=[priority_enum.value],
+                data=[priority.value],
                 checksum=0,
             ),
         )
 
     def test_color(self) -> None:
         self.assertEqual(
-            frame_mod.ColorEnum.ORANGE,
-            self._get_priority(frame_mod.PriorityEnum.A).color,
+            frame_mod.Colors.ORANGE,
+            self._get_priority(frame_mod.Priorities.A).color,
         )
         self.assertEqual(
-            frame_mod.ColorEnum.BLUE,
-            self._get_priority(frame_mod.PriorityEnum.B).color,
+            frame_mod.Colors.BLUE,
+            self._get_priority(frame_mod.Priorities.B).color,
         )
         self.assertEqual(
-            frame_mod.ColorEnum.GREEN,
-            self._get_priority(frame_mod.PriorityEnum.C).color,
+            frame_mod.Colors.GREEN,
+            self._get_priority(frame_mod.Priorities.C).color,
         )
 
-    def test_enum(self) -> None:
-        for priority_enum in list(frame_mod.PriorityEnum):
-            self.assertEqual(self._get_priority(priority_enum).enum, priority_enum)
+    def test_priority(self) -> None:
+        for priority in list(frame_mod.Priorities):
+            self.assertEqual(self._get_priority(priority).priority, priority)
 
-    def test_from_priority_enum(self) -> None:
-        for priority_enum in list(frame_mod.PriorityEnum):
+    def test_from_priority(self) -> None:
+        for priority in list(frame_mod.Priorities):
             self.assertEqual(
-                frame_mod.Priority.from_priority_enum(priority_enum).enum,
-                priority_enum,
+                frame_mod.Priority.from_priority(priority).priority,
+                priority,
             )
 
     def test_match(self) -> None:
         self.assertTrue(
-            isinstance(self._get_priority(frame_mod.PriorityEnum.A), frame_mod.Priority)
+            isinstance(self._get_priority(frame_mod.Priorities.A), frame_mod.Priority)
         )
 
 
@@ -378,11 +376,11 @@ class DayColorHighlightTest(TestCase):
     def setUp(self) -> None:
         data: List[int] = []
         for idx in range(0, frame_mod.DayColorHighlight.LENGTH):
-            color = frame_mod.ColorEnum.BLUE.value
+            color = frame_mod.Colors.BLUE.value
             if ((idx + 1) % 3) == 0:
-                color = frame_mod.ColorEnum.ORANGE.value
+                color = frame_mod.Colors.ORANGE.value
             if ((idx + 2) % 3) == 0:
-                color = frame_mod.ColorEnum.GREEN.value
+                color = frame_mod.Colors.GREEN.value
             highlight = 0
             if idx % 2:
                 highlight = 0x80
@@ -400,10 +398,10 @@ class DayColorHighlightTest(TestCase):
 
     def test_from_days_and_colors(self) -> None:
         days: Set[int] = {1, 8, 9, 19, 28}
-        colors: List[frame_mod.ColorEnum] = (
-            [frame_mod.ColorEnum.BLUE] * 10
-            + [frame_mod.ColorEnum.GREEN] * 10
-            + [frame_mod.ColorEnum.ORANGE] * 11
+        colors: List[frame_mod.Colors] = (
+            [frame_mod.Colors.BLUE] * 10
+            + [frame_mod.Colors.GREEN] * 10
+            + [frame_mod.Colors.ORANGE] * 11
         )
         day_color_highlight = frame_mod.DayColorHighlight.from_days_and_colors(
             days, colors
@@ -420,37 +418,37 @@ class DayColorHighlightTest(TestCase):
         self.assertEqual(
             self.frame.colors,
             [
-                frame_mod.ColorEnum.GREEN,
-                frame_mod.ColorEnum.BLUE,
-                frame_mod.ColorEnum.ORANGE,
-                frame_mod.ColorEnum.GREEN,
-                frame_mod.ColorEnum.BLUE,
-                frame_mod.ColorEnum.ORANGE,
-                frame_mod.ColorEnum.GREEN,
-                frame_mod.ColorEnum.BLUE,
-                frame_mod.ColorEnum.ORANGE,
-                frame_mod.ColorEnum.GREEN,
-                frame_mod.ColorEnum.BLUE,
-                frame_mod.ColorEnum.ORANGE,
-                frame_mod.ColorEnum.GREEN,
-                frame_mod.ColorEnum.BLUE,
-                frame_mod.ColorEnum.ORANGE,
-                frame_mod.ColorEnum.GREEN,
-                frame_mod.ColorEnum.BLUE,
-                frame_mod.ColorEnum.ORANGE,
-                frame_mod.ColorEnum.GREEN,
-                frame_mod.ColorEnum.BLUE,
-                frame_mod.ColorEnum.ORANGE,
-                frame_mod.ColorEnum.GREEN,
-                frame_mod.ColorEnum.BLUE,
-                frame_mod.ColorEnum.ORANGE,
-                frame_mod.ColorEnum.GREEN,
-                frame_mod.ColorEnum.BLUE,
-                frame_mod.ColorEnum.ORANGE,
-                frame_mod.ColorEnum.GREEN,
-                frame_mod.ColorEnum.BLUE,
-                frame_mod.ColorEnum.ORANGE,
-                frame_mod.ColorEnum.GREEN,
+                frame_mod.Colors.GREEN,
+                frame_mod.Colors.BLUE,
+                frame_mod.Colors.ORANGE,
+                frame_mod.Colors.GREEN,
+                frame_mod.Colors.BLUE,
+                frame_mod.Colors.ORANGE,
+                frame_mod.Colors.GREEN,
+                frame_mod.Colors.BLUE,
+                frame_mod.Colors.ORANGE,
+                frame_mod.Colors.GREEN,
+                frame_mod.Colors.BLUE,
+                frame_mod.Colors.ORANGE,
+                frame_mod.Colors.GREEN,
+                frame_mod.Colors.BLUE,
+                frame_mod.Colors.ORANGE,
+                frame_mod.Colors.GREEN,
+                frame_mod.Colors.BLUE,
+                frame_mod.Colors.ORANGE,
+                frame_mod.Colors.GREEN,
+                frame_mod.Colors.BLUE,
+                frame_mod.Colors.ORANGE,
+                frame_mod.Colors.GREEN,
+                frame_mod.Colors.BLUE,
+                frame_mod.Colors.ORANGE,
+                frame_mod.Colors.GREEN,
+                frame_mod.Colors.BLUE,
+                frame_mod.Colors.ORANGE,
+                frame_mod.Colors.GREEN,
+                frame_mod.Colors.BLUE,
+                frame_mod.Colors.ORANGE,
+                frame_mod.Colors.GREEN,
             ],
         )
 

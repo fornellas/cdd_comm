@@ -32,7 +32,7 @@ class TelephoneTest(TestCase):
     FIELD4: str = "Field 4"
     FIELD5: str = "Field 5"
     FIELD6: str = "Field 6"
-    COLOR: frame_mod.ColorEnum = frame_mod.ColorEnum.GREEN
+    COLOR: frame_mod.Colors = frame_mod.Colors.GREEN
 
     def _get_frames(
         self,
@@ -45,7 +45,7 @@ class TelephoneTest(TestCase):
         field4: Optional[str] = None,
         field5: Optional[str] = None,
         field6: Optional[str] = None,
-        color: Optional[frame_mod.ColorEnum] = None,
+        color: Optional[frame_mod.Colors] = None,
     ) -> List[frame_mod.Frame]:
         text_list = _raw_list_to_text_list(
             [
@@ -63,7 +63,7 @@ class TelephoneTest(TestCase):
 
         frames: List[frame_mod.Frame] = []
         if color is not None:
-            frames.append(frame_mod.Color.from_color_enum(color))
+            frames.append(frame_mod.Color.from_color(color))
 
         frames.extend(frame_mod.Text.from_text_list(text_list))
 
@@ -80,7 +80,7 @@ class TelephoneTest(TestCase):
         field4: Optional[str] = None,
         field5: Optional[str] = None,
         field6: Optional[str] = None,
-        color: Optional[frame_mod.ColorEnum] = None,
+        color: Optional[frame_mod.Colors] = None,
     ) -> None:
         frames = self._get_frames(
             name,
@@ -156,7 +156,7 @@ class TelephoneTest(TestCase):
         field4: Optional[str] = None,
         field5: Optional[str] = None,
         field6: Optional[str] = None,
-        color: Optional[frame_mod.ColorEnum] = None,
+        color: Optional[frame_mod.Colors] = None,
     ) -> None:
         frames = record_mod.Telephone(
             name,
@@ -237,7 +237,7 @@ class BusinessCardTest(TestCase):
     PO_BOX: str = "134235"
     ADDRESS: str = "Nowhere St"
     MEMO: str = "Nice guy"
-    COLOR: frame_mod.ColorEnum = frame_mod.ColorEnum.GREEN
+    COLOR: frame_mod.Colors = frame_mod.Colors.GREEN
 
     def _get_frames(
         self,
@@ -251,7 +251,7 @@ class BusinessCardTest(TestCase):
         po_box: Optional[str] = None,
         address: Optional[str] = None,
         memo: Optional[str] = None,
-        color: Optional[frame_mod.ColorEnum] = None,
+        color: Optional[frame_mod.Colors] = None,
     ) -> List[frame_mod.Frame]:
         text_list = _raw_list_to_text_list(
             [
@@ -270,7 +270,7 @@ class BusinessCardTest(TestCase):
 
         frames: List[frame_mod.Frame] = []
         if color is not None:
-            frames.append(frame_mod.Color.from_color_enum(color))
+            frames.append(frame_mod.Color.from_color(color))
 
         frames.extend(frame_mod.Text.from_text_list(text_list))
 
@@ -288,7 +288,7 @@ class BusinessCardTest(TestCase):
         po_box: Optional[str] = None,
         address: Optional[str] = None,
         memo: Optional[str] = None,
-        color: Optional[frame_mod.ColorEnum] = None,
+        color: Optional[frame_mod.Colors] = None,
     ) -> None:
         frames = self._get_frames(
             employer,
@@ -366,7 +366,7 @@ class BusinessCardTest(TestCase):
         po_box: Optional[str] = None,
         address: Optional[str] = None,
         memo: Optional[str] = None,
-        color: Optional[frame_mod.ColorEnum] = None,
+        color: Optional[frame_mod.Colors] = None,
     ) -> None:
         frames = record_mod.BusinessCard(
             employer,
@@ -438,14 +438,14 @@ class BusinessCardTest(TestCase):
 
 class MemoTest(TestCase):
     TEXT: str = "Hello\nWorld"
-    COLOR: frame_mod.ColorEnum = frame_mod.ColorEnum.GREEN
+    COLOR: frame_mod.Colors = frame_mod.Colors.GREEN
 
     def _get_frames(
-        self, text: str, color: Optional[frame_mod.ColorEnum]
+        self, text: str, color: Optional[frame_mod.Colors]
     ) -> List[frame_mod.Frame]:
         frames: List[frame_mod.Frame] = []
         if color is not None:
-            frames.append(frame_mod.Color.from_color_enum(color))
+            frames.append(frame_mod.Color.from_color(color))
         frames.extend(frame_mod.Text.from_text_list([text]))
         return frames
 
@@ -469,10 +469,10 @@ class CalendarTest(TestCase):
     YEAR: int = 2021
     MONTH: int = 12
     DAYS: Set[int] = {1, 10, 19, 28}
-    COLORS: List[frame_mod.ColorEnum] = (
-        [frame_mod.ColorEnum.BLUE] * 10
-        + [frame_mod.ColorEnum.GREEN] * 10
-        + [frame_mod.ColorEnum.ORANGE] * 11
+    COLORS: List[frame_mod.Colors] = (
+        [frame_mod.Colors.BLUE] * 10
+        + [frame_mod.Colors.GREEN] * 10
+        + [frame_mod.Colors.ORANGE] * 11
     )
 
     def _get_frames(
@@ -480,7 +480,7 @@ class CalendarTest(TestCase):
         year: int,
         month: int,
         days: Set[int],
-        colors: Optional[List[frame_mod.ColorEnum]],
+        colors: Optional[List[frame_mod.Colors]],
     ) -> List[frame_mod.Frame]:
         frames: List[frame_mod.Frame] = []
         frames.append(frame_mod.Date.from_date(datetime.date(year, month, 1)))
@@ -554,7 +554,7 @@ class ScheduleTest(TestCase):
         alarm_time: Optional[datetime.time],
         illustration: Optional[int],
         description: Optional[str],
-        color: Optional[frame_mod.ColorEnum],
+        color: Optional[frame_mod.Colors],
     ) -> List[frame_mod.Frame]:
         frames: List[frame_mod.Frame] = []
 
@@ -575,7 +575,7 @@ class ScheduleTest(TestCase):
             frames.append(frame_mod.Illustration.from_number(illustration))
 
         if color is not None:
-            frames.append(frame_mod.Color.from_color_enum(color))
+            frames.append(frame_mod.Color.from_color(color))
 
         if description is not None:
             frames.extend(frame_mod.Text.from_text(description))
@@ -590,7 +590,7 @@ class ScheduleTest(TestCase):
         alarm_time: Optional[datetime.time],
         illustration: Optional[int],
         description: Optional[str],
-        color: Optional[frame_mod.ColorEnum],
+        color: Optional[frame_mod.Colors],
     ) -> None:
         frames = self._get_frames(
             date,
@@ -655,7 +655,7 @@ class ScheduleTest(TestCase):
             alarm_time=datetime.time(21, 0),
             illustration=3,
             description="Do something",
-            color=frame_mod.ColorEnum.ORANGE,
+            color=frame_mod.Colors.ORANGE,
         )
 
     def _assert_frames(
@@ -666,7 +666,7 @@ class ScheduleTest(TestCase):
         alarm_time: Optional[datetime.time],
         illustration: Optional[int],
         description: Optional[str],
-        color: Optional[frame_mod.ColorEnum],
+        color: Optional[frame_mod.Colors],
     ) -> None:
         schedule = record_mod.Schedule(
             date,
@@ -735,7 +735,7 @@ class ScheduleTest(TestCase):
             alarm_time=datetime.time(21, 0),
             illustration=3,
             description="Do something",
-            color=frame_mod.ColorEnum.ORANGE,
+            color=frame_mod.Colors.ORANGE,
         )
 
 

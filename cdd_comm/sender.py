@@ -141,7 +141,7 @@ if __name__ == "__main__":
         directory_data={
             frame_mod.TelephoneDirectory.get(): [
                 record_mod.Telephone(
-                    color=frame_mod.ColorEnum.BLUE,
+                    color=frame_mod.Colors.BLUE,
                     name="John Doe Blue",
                     number="123-456",
                     address="Nowhere St",
@@ -153,7 +153,7 @@ if __name__ == "__main__":
                     field6=None,
                 ),
                 record_mod.Telephone(
-                    color=frame_mod.ColorEnum.ORANGE,
+                    color=frame_mod.Colors.ORANGE,
                     name="John Doe Orange",
                     number="123-456",
                     address="Nowhere St",
@@ -165,7 +165,7 @@ if __name__ == "__main__":
                     field6=None,
                 ),
                 record_mod.Telephone(
-                    color=frame_mod.ColorEnum.GREEN,
+                    color=frame_mod.Colors.GREEN,
                     name="John Doe Green",
                     number="123-456",
                     address="Nowhere St",
