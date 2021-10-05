@@ -478,7 +478,6 @@ class Schedule(Record):
 
 @dataclass
 class Reminder(Record):
-    year: Optional[int]
     month: Optional[int]
     day: Optional[int]
     alarm_time: Optional[datetime.time]
@@ -489,12 +488,12 @@ class Reminder(Record):
 
     DESCRIPTION: str = "Reminder"
 
+    def __post_init__(self):
+        if self.month is not None and self.day is None:
+            raise ValueError("cant set month without day")
+
     def __str__(self) -> str:
         info_str = "Reminder: "
-        if self.year:
-            info_str += str(self.year) + "-"
-        else:
-            info_str += "-----"
         if self.month:
             info_str += str(self.month) + "-"
         else:
@@ -513,7 +512,6 @@ class Reminder(Record):
     @classmethod
     def from_frames(cls, frames: List[frame_mod.Frame]) -> "Reminder":
         color: Optional[frame_mod.Colors] = None
-        year: Optional[int] = None
         month: Optional[int] = None
         day: Optional[int] = None
         alarm_time: Optional[datetime.time] = None
@@ -523,7 +521,8 @@ class Reminder(Record):
             if isinstance(f, frame_mod.Color):
                 color = f.color
             elif isinstance(f, frame_mod.Date):
-                year = f.year
+                if f.year is not None:
+                    raise ValueError("cant set reminder for a single year")
                 month = f.month
                 day = f.day
             elif isinstance(f, frame_mod.Alarm):
@@ -536,7 +535,7 @@ class Reminder(Record):
         if description == "":
             raise ValueError("Missing description")
 
-        return cls(year, month, day, alarm_time, description, color)
+        return cls(month, day, alarm_time, description, color)
 
     def to_frames(self) -> List[frame_mod.Frame]:
         raise NotImplementedError
