@@ -162,8 +162,8 @@ class CalendarDirectory(Directory):
     DATA: ClassVar[List[int]] = [0x80, 0x0]
 
 
-class ScheduleKeeperDirectory(Directory):
-    DESCRIPTION: ClassVar[str] = "Schedule Keeper Directory"
+class ScheduleDirectory(Directory):
+    DESCRIPTION: ClassVar[str] = "Schedule Directory"
     DATA: ClassVar[List[int]] = [0xB0, 0x0]
 
 

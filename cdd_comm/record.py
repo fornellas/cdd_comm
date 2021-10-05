@@ -387,12 +387,12 @@ class Schedule(Record):
     description: Optional[str]
     color: Optional[frame_mod.ColorEnum]
 
-    DIRECTORY: ClassVar[Type[frame_mod.Directory]] = frame_mod.ScheduleKeeperDirectory
+    DIRECTORY: ClassVar[Type[frame_mod.Directory]] = frame_mod.ScheduleDirectory
 
     DESCRIPTION: str = "Schedule"
 
     def __str__(self) -> str:
-        return f"Schedule Keeper: {self.date}, {self.start_time}, {self.end_time}, {self.alarm_time}, {self.illustration}, {self.description} ({self.color})"
+        return f"Schedule: {self.date}, {self.start_time}, {self.end_time}, {self.alarm_time}, {self.illustration}, {self.description} ({self.color})"
 
     @classmethod
     def from_frames(cls, frames: List[frame_mod.Frame]) -> "Schedule":

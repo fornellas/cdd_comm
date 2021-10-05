@@ -136,8 +136,8 @@ class DirectoryTest(TestCase):
     def test_CalendarDirectory_match(self) -> None:
         self.assert_match(frame_mod.CalendarDirectory)
 
-    def test_ScheduleKeeperDirectory_match(self) -> None:
-        self.assert_match(frame_mod.ScheduleKeeperDirectory)
+    def test_ScheduleDirectory_match(self) -> None:
+        self.assert_match(frame_mod.ScheduleDirectory)
 
     def test_ReminderDirectory_match(self) -> None:
         self.assert_match(frame_mod.ReminderDirectory)
