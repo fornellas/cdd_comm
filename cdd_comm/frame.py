@@ -28,8 +28,8 @@ class Frame:
     def get_kebab_case_description(cls) -> str:
         return cls.DESCRIPTION.lower().replace(" ", "-")
 
-    def __init_subclass__(cls, *args, **kwargs):
-        super().__init_subclass__(*args, **kwargs)
+    def __init_subclass__(cls) -> None:
+        super().__init_subclass__()
         cls.SUBCLASSES.append(cls)
 
     def __str__(self) -> str:
@@ -440,6 +440,20 @@ class Date(TextDataFrame):
     TYPE: ClassVar[int] = 0xF0
     ADDRESS: ClassVar[int] = 0x0
 
+    @classmethod
+    def from_date(cls, date: datetime.date) -> "Date":
+        data: List[int] = [
+            cls.UNICODE_TO_CASIO[c]
+            for c in "%.4d-%.2d-%.2d" % (date.year, date.month, date.day)
+        ]
+        return cls(
+            length=cls.LENGTH,
+            frame_type=cls.TYPE,
+            address=cls.ADDRESS,
+            data=data,
+            checksum=cls.calculate_checksum(cls.LENGTH, cls.TYPE, cls.ADDRESS, data),
+        )
+
     def _get_date(self) -> Tuple[Optional[int], Optional[int], Optional[int]]:
         year: Optional[int]
         month: Optional[int]
@@ -460,20 +474,6 @@ class Date(TextDataFrame):
         else:
             day = None
         return (year, month, day)
-
-    @classmethod
-    def from_date(cls, date: datetime.date) -> "Date":
-        data: List[int] = [
-            cls.UNICODE_TO_CASIO[c]
-            for c in "%.4d-%.2d-%.2d" % (date.year, date.month, date.day)
-        ]
-        return cls(
-            length=cls.LENGTH,
-            frame_type=cls.TYPE,
-            address=cls.ADDRESS,
-            data=data,
-            checksum=cls.calculate_checksum(cls.LENGTH, cls.TYPE, cls.ADDRESS, data),
-        )
 
     @property
     def year(self) -> Optional[int]:
@@ -987,15 +987,15 @@ class FrameBuilder:
     data: List[int]
     checksum: Optional[int]
 
-    def __init__(self):
-        self.length = None
-        self.frame_type = None
-        self._address_low = None
-        self._address_high = None
-        self.address = None
-        self._data_count = None
+    def __init__(self) -> None:
+        self.length: Optional[int] = None
+        self.frame_type: Optional[int] = None
+        self._address_low: Optional[int] = None
+        self._address_high: Optional[int] = None
+        self.address: Optional[int] = None
+        self._data_count: Optional[int] = None
         self.data = []
-        self.checksum = None
+        self.checksum: Optional[int] = None
 
     def add_data(self, data: int) -> Tuple[str, Optional[Frame]]:
         if self.length is None:

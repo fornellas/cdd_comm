@@ -391,7 +391,7 @@ class Schedule(Record):
 
     DESCRIPTION: str = "Schedule"
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if self.start_time is None and self.description is None:
             raise ValueError("either start time or description must be set")
         if self.end_time is not None and self.start_time is None:
@@ -488,7 +488,7 @@ class Reminder(Record):
 
     DESCRIPTION: str = "Reminder"
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if self.month is not None and self.day is None:
             raise ValueError("cant set month without day")
 

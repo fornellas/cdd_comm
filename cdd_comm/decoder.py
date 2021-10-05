@@ -2,10 +2,11 @@ from typing import Dict, List, Optional, Tuple, Union, cast
 
 import sigrokdecode
 
-from . import frame, record
+from . import frame as frame_mod
+from . import record as record_mod
 
 
-def _get_annotation_index(annotations, name):
+def _get_annotation_index(annotations: Tuple[Tuple[str, str], ...], name: str) -> int:
     for index, annotation in enumerate(annotations):
         if annotation[0] == name:
             return index
@@ -14,7 +15,7 @@ def _get_annotation_index(annotations, name):
 
 _FRAME_TYPE_DESC: Dict[str, str] = {
     frame_class.get_kebab_case_description(): frame_class.DESCRIPTION
-    for frame_class in frame.Frame.SUBCLASSES + [frame.Frame]
+    for frame_class in frame_mod.Frame.SUBCLASSES + [frame_mod.Frame]
 }
 
 _ANNOTATIONS = (
@@ -26,7 +27,7 @@ _ANNOTATIONS = (
     *[(f"frame-type-{id_str}", desc) for id_str, desc in _FRAME_TYPE_DESC.items()],
     *[
         (f"sender-record-{record_class.__name__.lower()}", record_class.DESCRIPTION)
-        for record_class in record.Record.DIRECTORY_TO_RECORD.values()
+        for record_class in record_mod.Record.DIRECTORY_TO_RECORD.values()
     ],
     ("sender-record-unknown", "Unknown Record"),
     ("sender-warning", "Sender Warning"),
@@ -95,7 +96,7 @@ class Decoder(sigrokdecode.Decoder):
                 _get_annotation_index(
                     _ANNOTATIONS, f"sender-record-{record_class.__name__.lower()}"
                 )
-                for record_class in record.Record.DIRECTORY_TO_RECORD.values()
+                for record_class in record_mod.Record.DIRECTORY_TO_RECORD.values()
             )
             + (_get_annotation_index(_ANNOTATIONS, "sender-record-unknown"),),
         ),
@@ -124,7 +125,7 @@ class Decoder(sigrokdecode.Decoder):
     tags = ["PC"]
 
     _record_state: str
-    _frame_builder: frame.FrameBuilder
+    _frame_builder: frame_mod.FrameBuilder
     _chunk_startsample: int
 
     ##
@@ -133,7 +134,7 @@ class Decoder(sigrokdecode.Decoder):
 
     # Receiver
 
-    def _decode_receiver(self, startsample: int, endsample: int, data) -> None:
+    def _decode_receiver(self, startsample: int, endsample: int, data: int) -> None:
         if data == 0x11:
             self.put(
                 startsample,
@@ -195,7 +196,7 @@ class Decoder(sigrokdecode.Decoder):
     # Sender
 
     def _decode_sender_sync_or_frame(
-        self, startsample: int, endsample: int, data
+        self, startsample: int, endsample: int, data: int
     ) -> bool:
         # Sync 1/2
         if data == ord("\r"):
@@ -226,7 +227,7 @@ class Decoder(sigrokdecode.Decoder):
             return True
         return False
 
-    def _decode_sender_sync(self, startsample: int, endsample: int, data) -> bool:
+    def _decode_sender_sync(self, startsample: int, endsample: int, data: int) -> bool:
         if data is ord("\n"):
             self.put(
                 startsample,
@@ -241,7 +242,7 @@ class Decoder(sigrokdecode.Decoder):
             return True
         return False
 
-    def _decode_hex(self, data) -> Optional[int]:
+    def _decode_hex(self, data: int) -> Optional[int]:
         if not hasattr(self, "_hex_high_value"):
             self._hex_high_value = chr(data)
             return None
@@ -250,9 +251,11 @@ class Decoder(sigrokdecode.Decoder):
             delattr(self, "_hex_high_value")
             return hex_value
 
-    def _decode_record(self, startsample: int, endsample: int, decoded_frame) -> None:
+    def _decode_record(
+        self, startsample: int, endsample: int, decoded_frame: frame_mod.Frame
+    ) -> None:
         if self._record_state == "directory_or_record":
-            if isinstance(decoded_frame, frame.Directory):
+            if isinstance(decoded_frame, frame_mod.Directory):
                 self._record_state = "start"
                 self._record_directory_type = type(decoded_frame)
                 return
@@ -261,11 +264,11 @@ class Decoder(sigrokdecode.Decoder):
         if self._record_state == "start":
             self._record_startsample = startsample
             self._record_state = "frames"
-            self._record_frames: List[frame.Frame] = []
+            self._record_frames: List[frame_mod.Frame] = []
         if self._record_state == "frames":
-            if isinstance(decoded_frame, frame.EndOfRecord):
-                if self._record_directory_type in record.Record.DIRECTORY_TO_RECORD:
-                    record_class = record.Record.DIRECTORY_TO_RECORD[
+            if isinstance(decoded_frame, frame_mod.EndOfRecord):
+                if self._record_directory_type in record_mod.Record.DIRECTORY_TO_RECORD:
+                    record_class = record_mod.Record.DIRECTORY_TO_RECORD[
                         self._record_directory_type
                     ]
                     decoded_record = record_class.from_frames(self._record_frames)
@@ -303,7 +306,7 @@ class Decoder(sigrokdecode.Decoder):
             else:
                 self._record_frames.append(decoded_frame)
 
-    def _decode_sender_frame(self, startsample: int, endsample: int, data) -> bool:
+    def _decode_sender_frame(self, startsample: int, endsample: int, data: int) -> bool:
         value = self._decode_hex(data)
         if value is not None:
             (chunk_desc, decoded_frame) = self._frame_builder.add_data(value)
@@ -327,7 +330,7 @@ class Decoder(sigrokdecode.Decoder):
                             ["Bad Checksum"],
                         ],
                     )
-                if type(decoded_frame) is frame.Frame:
+                if type(decoded_frame) is frame_mod.Frame:
                     self.put(
                         self._frame_startsample,
                         endsample,
@@ -351,13 +354,13 @@ class Decoder(sigrokdecode.Decoder):
                         ],
                     )
                 self._decode_record(self._frame_startsample, endsample, decoded_frame)
-                self._frame_builder = frame.FrameBuilder()
+                self._frame_builder = frame_mod.FrameBuilder()
                 self._sender_decode_function = self._decode_sender_sync_or_frame
         else:
             self._chunk_startsample = startsample
         return True
 
-    def _decode_sender(self, startsample: int, endsample: int, data) -> None:
+    def _decode_sender(self, startsample: int, endsample: int, data: int) -> None:
 
         if self._sender_decode_function(startsample, endsample, data):
             return
@@ -389,17 +392,26 @@ class Decoder(sigrokdecode.Decoder):
         """
         self.out_ann = self.register(sigrokdecode.OUTPUT_ANN)
 
-    def reset(self):
+    def reset(self) -> None:
         """
         This function is called before the beginning of the decoding. This is the
         place to reset variables internal to your protocol decoder to their initial
         state, such as state machines and counters.
         """
         self._sender_decode_function = self._decode_sender_sync_or_frame
-        self._frame_builder = frame.FrameBuilder()
+        self._frame_builder = frame_mod.FrameBuilder()
         self._record_state = "directory_or_record"
 
-    def decode(self, startsample: int, endsample: int, data) -> None:
+    def decode(
+        self,
+        startsample: int,
+        endsample: int,
+        data: Tuple[
+            str,
+            int,
+            Union[int, Tuple[int, List[int]], Tuple[int, int], Tuple[int, bool]],
+        ],
+    ) -> None:
         """
         In stacked decoders, this is a function that is called by the
         libsigrokdecode backend whenever it has a chunk of data for the protocol
@@ -409,6 +421,7 @@ class Decoder(sigrokdecode.Decoder):
         self.options = cast(Dict[str, str], self.options)
 
         ptype, rxtx, pdata = data
+        pdata = cast(Tuple[int, List[int]], pdata)
 
         if ptype != "DATA":
             return
