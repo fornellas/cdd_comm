@@ -545,11 +545,200 @@ class CalendarTest(TestCase):
         )
 
 
-# class ScheduleTest(TestCase):
-#     def test_from_frames(self) -> None:
-#         pass
-#     def test_to_frames(self) -> None:
-#         pass
+class ScheduleTest(TestCase):
+    def _get_frames(
+        self,
+        date: datetime.date,
+        start_time: Optional[datetime.time],
+        end_time: Optional[datetime.time],
+        alarm_time: Optional[datetime.time],
+        illustration: Optional[int],
+        description: Optional[str],
+        color: Optional[frame_mod.ColorEnum],
+    ) -> List[frame_mod.Frame]:
+        frames: List[frame_mod.Frame] = []
+
+        frames.append(frame_mod.Date.from_date(date))
+
+        if start_time is not None:
+            if end_time is None:
+                frames.append(frame_mod.Time.from_time(start_time))
+            else:
+                frames.append(
+                    frame_mod.StartEndTime.from_start_end_times(start_time, end_time)
+                )
+
+        if alarm_time is not None:
+            frames.append(frame_mod.Alarm.from_time(alarm_time))
+
+        if illustration is not None:
+            frames.append(frame_mod.Illustration.from_number(illustration))
+
+        if color is not None:
+            frames.append(frame_mod.Color.from_color_enum(color))
+
+        if description is not None:
+            frames.extend(frame_mod.Text.from_text(description))
+
+        return frames
+
+    def _assert_schedule(
+        self,
+        date: datetime.date,
+        start_time: Optional[datetime.time],
+        end_time: Optional[datetime.time],
+        alarm_time: Optional[datetime.time],
+        illustration: Optional[int],
+        description: Optional[str],
+        color: Optional[frame_mod.ColorEnum],
+    ) -> None:
+        frames = self._get_frames(
+            date,
+            start_time,
+            end_time,
+            alarm_time,
+            illustration,
+            description,
+            color,
+        )
+
+        schedule = record_mod.Schedule.from_frames(frames)
+        self.assertEqual(schedule.date, date)
+        self.assertEqual(schedule.start_time, start_time)
+        self.assertEqual(schedule.end_time, end_time)
+        self.assertEqual(schedule.alarm_time, alarm_time)
+        self.assertEqual(schedule.illustration, illustration)
+        self.assertEqual(schedule.description, description)
+        self.assertEqual(schedule.color, color)
+
+    def test_from_frames(self) -> None:
+        self._assert_schedule(
+            date=datetime.date(2020, 11, 1),
+            start_time=None,
+            end_time=None,
+            alarm_time=None,
+            illustration=None,
+            description="do something",
+            color=None,
+        )
+        self._assert_schedule(
+            date=datetime.date(2020, 11, 1),
+            start_time=datetime.time(23, 3),
+            end_time=None,
+            alarm_time=None,
+            illustration=None,
+            description=None,
+            color=None,
+        )
+        self._assert_schedule(
+            date=datetime.date(2020, 11, 1),
+            start_time=datetime.time(22, 3),
+            end_time=datetime.time(23, 4),
+            alarm_time=None,
+            illustration=None,
+            description=None,
+            color=None,
+        )
+        self._assert_schedule(
+            date=datetime.date(2020, 11, 1),
+            start_time=datetime.time(22, 3),
+            end_time=datetime.time(23, 4),
+            alarm_time=datetime.time(21, 0),
+            illustration=None,
+            description=None,
+            color=None,
+        )
+        self._assert_schedule(
+            date=datetime.date(2020, 11, 1),
+            start_time=datetime.time(22, 3),
+            end_time=datetime.time(23, 4),
+            alarm_time=datetime.time(21, 0),
+            illustration=3,
+            description="Do something",
+            color=frame_mod.ColorEnum.ORANGE,
+        )
+
+    def _assert_frames(
+        self,
+        date: datetime.date,
+        start_time: Optional[datetime.time],
+        end_time: Optional[datetime.time],
+        alarm_time: Optional[datetime.time],
+        illustration: Optional[int],
+        description: Optional[str],
+        color: Optional[frame_mod.ColorEnum],
+    ) -> None:
+        schedule = record_mod.Schedule(
+            date,
+            start_time,
+            end_time,
+            alarm_time,
+            illustration,
+            description,
+            color,
+        )
+
+        self.assertEqual(
+            schedule.to_frames(),
+            self._get_frames(
+                date,
+                start_time,
+                end_time,
+                alarm_time,
+                illustration,
+                description,
+                color,
+            ),
+        )
+
+    def test_to_frames(self) -> None:
+        self._assert_frames(
+            date=datetime.date(2020, 11, 1),
+            start_time=None,
+            end_time=None,
+            alarm_time=None,
+            illustration=None,
+            description="do something",
+            color=None,
+        )
+        self._assert_frames(
+            date=datetime.date(2020, 11, 1),
+            start_time=datetime.time(23, 3),
+            end_time=None,
+            alarm_time=None,
+            illustration=None,
+            description=None,
+            color=None,
+        )
+        self._assert_frames(
+            date=datetime.date(2020, 11, 1),
+            start_time=datetime.time(22, 3),
+            end_time=datetime.time(23, 4),
+            alarm_time=None,
+            illustration=None,
+            description=None,
+            color=None,
+        )
+        self._assert_frames(
+            date=datetime.date(2020, 11, 1),
+            start_time=datetime.time(22, 3),
+            end_time=datetime.time(23, 4),
+            alarm_time=datetime.time(21, 0),
+            illustration=None,
+            description=None,
+            color=None,
+        )
+        self._assert_frames(
+            date=datetime.date(2020, 11, 1),
+            start_time=datetime.time(22, 3),
+            end_time=datetime.time(23, 4),
+            alarm_time=datetime.time(21, 0),
+            illustration=3,
+            description="Do something",
+            color=frame_mod.ColorEnum.ORANGE,
+        )
+
+
 # class ReminderTest(TestCase):
 #     def test_from_frames(self) -> None:
 #         pass

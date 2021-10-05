@@ -394,7 +394,7 @@ class Schedule(Record):
     def __post_init__(self):
         if self.start_time is None and self.description is None:
             raise ValueError("either start time or description must be set")
-        if self.end_time is not None and self.start_time:
+        if self.end_time is not None and self.start_time is None:
             raise ValueError("can't set end time without start time")
         if self.alarm_time is not None and self.start_time is None:
             raise ValueError("cant set alarm time without start time")
@@ -435,8 +435,6 @@ class Schedule(Record):
 
         if not date:
             raise ValueError("Missing date")
-        if not start_time and not description:
-            raise ValueError("Missing either start_time or description")
 
         return cls(
             date,
@@ -449,7 +447,33 @@ class Schedule(Record):
         )
 
     def to_frames(self) -> List[frame_mod.Frame]:
-        raise NotImplementedError
+        frames: List[frame_mod.Frame] = []
+
+        frames.append(frame_mod.Date.from_date(self.date))
+
+        if self.start_time is not None:
+            if self.end_time is None:
+                frames.append(frame_mod.Time.from_time(self.start_time))
+            else:
+                frames.append(
+                    frame_mod.StartEndTime.from_start_end_times(
+                        self.start_time, self.end_time
+                    )
+                )
+
+        if self.alarm_time is not None:
+            frames.append(frame_mod.Alarm.from_time(self.alarm_time))
+
+        if self.illustration is not None:
+            frames.append(frame_mod.Illustration.from_number(self.illustration))
+
+        if self.color is not None:
+            frames.append(frame_mod.Color.from_color_enum(self.color))
+
+        if self.description is not None:
+            frames.extend(frame_mod.Text.from_text(self.description))
+
+        return frames
 
 
 @dataclass

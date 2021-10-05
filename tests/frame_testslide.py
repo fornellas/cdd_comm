@@ -252,9 +252,16 @@ class DeadlineDateTest(DateTest):
     ADDRESS: ClassVar[int] = frame_mod.DeadlineDate.ADDRESS
 
 
-class Time(TestCase):
+class TimeTest(TestCase):
     TIME_CLASS: ClassVar[Type[frame_mod.Time]] = frame_mod.Time
     TYPE: ClassVar[int] = frame_mod.Time.TYPE
+
+    def test_from_time(self) -> None:
+        hour = 22
+        minute = 2
+        time = frame_mod.Time.from_time(datetime.time(hour, minute))
+        self.assertEqual(time.time.hour, hour)
+        self.assertEqual(time.time.minute, minute)
 
     def test_time(self) -> None:
         self.assertEqual(
@@ -282,17 +289,17 @@ class Time(TestCase):
         self.assertTrue(isinstance(frame, self.TIME_CLASS))
 
 
-class DeadlineTimeTest(Time):
+class DeadlineTimeTest(TimeTest):
     TIME_CLASS: ClassVar[Type[frame_mod.Time]] = frame_mod.DeadlineTime
     TYPE: ClassVar[int] = frame_mod.DeadlineTime.TYPE
 
 
-class ToDoAlarmTest(Time):
+class ToDoAlarmTest(TimeTest):
     TIME_CLASS: ClassVar[Type[frame_mod.Time]] = frame_mod.ToDoAlarm
     TYPE: ClassVar[int] = frame_mod.ToDoAlarm.TYPE
 
 
-class AlarmTest(Time):
+class AlarmTest(TimeTest):
     TIME_CLASS: ClassVar[Type[frame_mod.Time]] = frame_mod.Alarm
     TYPE: ClassVar[int] = frame_mod.Alarm.TYPE
 
@@ -464,6 +471,22 @@ class StartEndTimeTest(TestCase):
             ),
         )
 
+    def test_from_time(self) -> None:
+        start_hour = 22
+        start_minute = 2
+        end_hour = 23
+        end_minute = 3
+        start_end_time = frame_mod.StartEndTime.from_start_end_times(
+            datetime.time(start_hour, start_minute),
+            datetime.time(end_hour, end_minute),
+        )
+        self.assertEqual(start_end_time.start_time.hour, start_hour)
+        self.assertEqual(start_end_time.start_time.minute, start_minute)
+        end_time = start_end_time.end_time
+        assert end_time
+        self.assertEqual(end_time.hour, end_hour)
+        self.assertEqual(end_time.minute, end_minute)
+
     def test_start_time(self) -> None:
         self.assertEqual(self.frame.start_time, datetime.time(22, 33))
 
@@ -486,6 +509,11 @@ class IllustrationTest(TestCase):
                 checksum=0,
             ),
         )
+
+    def from_number(self):
+        number = 8
+        illustration = frame_mod.Illustration.from_number(number)
+        self.assertEqual(illustration.number, number)
 
     def test_end_time(self) -> None:
         self.assertEqual(self.frame.number, 0x8)

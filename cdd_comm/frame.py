@@ -526,6 +526,19 @@ class Time(TextDataFrame):
     TYPE: ClassVar[int] = 0xE0
     ADDRESS: ClassVar[int] = 0x0
 
+    @classmethod
+    def from_time(cls, time: datetime.time) -> "Time":
+        data: List[int] = [
+            cls.UNICODE_TO_CASIO[c] for c in "%.2d:%.2d" % (time.hour, time.minute)
+        ]
+        return cls(
+            length=cls.LENGTH,
+            frame_type=cls.TYPE,
+            address=cls.ADDRESS,
+            data=data,
+            checksum=cls.calculate_checksum(cls.LENGTH, cls.TYPE, cls.ADDRESS, data),
+        )
+
     @property
     def time(self) -> datetime.time:
         hour_str, minute_str = self.text.split(":")
@@ -750,6 +763,23 @@ class StartEndTime(TextDataFrame):
     TYPE: ClassVar[int] = 0xE0
     ADDRESS: ClassVar[int] = 0x0
 
+    @classmethod
+    def from_start_end_times(
+        cls, start_time: datetime.time, end_time: datetime.time
+    ) -> "StartEndTime":
+        data: List[int] = [
+            cls.UNICODE_TO_CASIO[c]
+            for c in "%.2d:%.2d~%.2d:%.2d"
+            % (start_time.hour, start_time.minute, end_time.hour, end_time.minute)
+        ]
+        return cls(
+            length=cls.LENGTH,
+            frame_type=cls.TYPE,
+            address=cls.ADDRESS,
+            data=data,
+            checksum=cls.calculate_checksum(cls.LENGTH, cls.TYPE, cls.ADDRESS, data),
+        )
+
     def _get_start_end_times(self) -> Tuple[datetime.time, Optional[datetime.time]]:
         time_str_list = self.text.split("~")
 
@@ -782,6 +812,17 @@ class Illustration(Frame):
     LENGTH: ClassVar[int] = 0x1
     TYPE: ClassVar[int] = 0x21
     ADDRESS: ClassVar[int] = 0x0
+
+    @classmethod
+    def from_number(cls, number: int) -> "Illustration":
+        data: List[int] = [number]
+        return cls(
+            cls.LENGTH,
+            cls.TYPE,
+            cls.ADDRESS,
+            data,
+            cls.calculate_checksum(cls.LENGTH, cls.TYPE, cls.ADDRESS, data),
+        )
 
     @property
     def number(self) -> int:
@@ -873,6 +914,10 @@ class Text(TextDataFrame):
             address += len(text)
 
         return frames
+
+    @classmethod
+    def from_text(cls, text: str) -> List["Text"]:
+        return cls.from_text_list([text])
 
 
 # End
