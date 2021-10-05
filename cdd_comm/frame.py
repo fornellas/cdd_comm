@@ -430,10 +430,7 @@ class TextDataFrame(ABC, Frame):
 
     @property
     def text(self) -> str:
-        return "".join(
-            self.CASIO_TO_UNICODE[d] if d in self.CASIO_TO_UNICODE else f"[{d}]"
-            for d in self.data
-        )
+        return "".join(self.CASIO_TO_UNICODE[d] for d in self.data)
 
     def __str__(self) -> str:
         return f"{self.DESCRIPTION}: {self.text}"
