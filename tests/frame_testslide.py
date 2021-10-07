@@ -508,7 +508,7 @@ class IllustrationTest(TestCase):
             ),
         )
 
-    def from_number(self):
+    def test_from_number(self):
         number = 8
         illustration = frame_mod.Illustration.from_number(number)
         self.assertEqual(illustration.number, number)
