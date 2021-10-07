@@ -841,6 +841,7 @@ class Text(TextDataFrame):
     TYPE_LOW: ClassVar[int] = 0x80
     TYPE_HIGH: ClassVar[int] = 0x81
     _MAX_CHUNK_SIZE: int = 0x80
+    MAX_LENGTH: ClassVar[int] = 376
 
     @classmethod
     def match(cls, length: int, frame_type: int, address: int, data: List[int]) -> bool:
@@ -852,17 +853,19 @@ class Text(TextDataFrame):
         return False
 
     @classmethod
-    def _from_text(cls, text: str, last: bool) -> List["Text"]:
+    def _from_text(
+        cls, text: str, last: bool, address: int
+    ) -> Tuple[List["Text"], int]:
         if not last:
             text += chr(0x1F)
-        if len(text) > (0x80 * 3):
+
+        if len(text) > cls.MAX_LENGTH:
             raise ValueError("Text too long")
 
         frame_list: List["Text"] = []
 
         lines = text.split("\n")
 
-        address = 0
         for idx, line in enumerate(lines):
             last = idx + 1 == len(lines)
 
@@ -874,10 +877,13 @@ class Text(TextDataFrame):
                 break_on_hyphens=False,
                 drop_whitespace=False,
             )[:3]:
-                frame_type = cls.TYPE_LOW
                 if address >= (cls._MAX_CHUNK_SIZE * 2):
                     frame_type = cls.TYPE_HIGH
-                    address = 0
+                    frame_address = address % (cls._MAX_CHUNK_SIZE * 2)
+                else:
+                    frame_type = cls.TYPE_LOW
+                    frame_address = address
+
                 data: List[int] = []
                 for c in chunk:
                     if c not in cls.UNICODE_TO_CASIO:
@@ -890,26 +896,29 @@ class Text(TextDataFrame):
                     cls(
                         length=length,
                         frame_type=frame_type,
-                        address=address,
+                        address=frame_address,
                         data=data,
                         checksum=cls.calculate_checksum(
-                            length, frame_type, address, data
+                            length, frame_type, frame_address, data
                         ),
                     )
                 )
                 address += len(data)
 
-        return frame_list
+        return frame_list, address
 
     @classmethod
     def from_text_list(cls, text_list: List[str]) -> List["Text"]:
+        if sum(map(len, text_list)) > cls.MAX_LENGTH:
+            raise ValueError("Text too long")
+
         frames: List[Text] = []
         address: int = 0
 
         for idx, text in enumerate(text_list):
             last: bool = idx + 1 == len(text_list)
-            frames.extend(cls._from_text(text=text, last=last))
-            address += len(text)
+            new_frames, address = cls._from_text(text=text, last=last, address=address)
+            frames.extend(new_frames)
 
         return frames
 

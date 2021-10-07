@@ -553,7 +553,7 @@ class TextTest(TestCase):
             frame=frames[1],
             length=5,
             frame_type=0x80,
-            address=0,
+            address=6,
             data=[ord(c) for c in text1],
             text=text1,
         )
@@ -646,6 +646,78 @@ class TextTest(TestCase):
             address=0,
             data=[ord(c) for c in third_frame_text],
             text=third_frame_text,
+        )
+
+    def test_from_text_max_length(self) -> None:
+        text0 = (
+            "1---------------"
+            "2---------------"
+            "3---------------"
+            "4---------------"
+            "5---------------"
+            "6---------------"
+            "7---------------"
+            "8---------------"
+            "9---------------"
+            "10--------------"
+            "11--------------"
+            "12--------------"
+            "13--------------"
+            "14--------------"
+            "15--------------"
+            "16--------------"
+            "17--------------"
+            "18--------------"
+            "19--------------"
+            "20--------------"
+            "21--------------"
+            "22--------------"
+            "23--------------"
+            "24----"
+        )
+        text1 = "n"
+        text2 = "a"
+        frames = frame_mod.Text.from_text_list([text0, text1, text2])
+        self.assertEqual(len(frames), 5)
+        self._assert_frame(
+            frame=frames[0],
+            length=0x80,
+            frame_type=0x80,
+            address=0,
+            data=[ord(c) for c in text0[:0x80]],
+            text=text0[:0x80],
+        )
+        self._assert_frame(
+            frame=frames[1],
+            length=0x80,
+            frame_type=0x80,
+            address=0x80,
+            data=[ord(c) for c in text0[0x80:0x100]],
+            text=text0[0x80:0x100],
+        )
+        self._assert_frame(
+            frame=frames[2],
+            length=0x77,
+            frame_type=0x81,
+            address=0x0,
+            data=[ord(c) for c in text0[0x100:] + chr(10)],
+            text=text0[0x100:] + chr(0x1F),
+        )
+        self._assert_frame(
+            frame=frames[3],
+            length=0x2,
+            frame_type=0x81,
+            address=0x77,
+            data=[ord(c) for c in text1 + chr(10)],
+            text=text1 + chr(0x1F),
+        )
+        self._assert_frame(
+            frame=frames[4],
+            length=0x1,
+            frame_type=0x81,
+            address=0x79,
+            data=[ord(c) for c in text2],
+            text=text2,
         )
 
     def test_match(self) -> None:
