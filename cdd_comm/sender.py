@@ -61,8 +61,9 @@ class FlowControlSerial:
                     break
             if self._serial.write([b]) != 1:
                 raise RuntimeError("Short write!")
-            # This seem to be required otherwise we get constant XOFF
-            time.sleep(0.0011)
+            # Without this delay, the serial buffer fills quickly and there's
+            # no time to process XOFF requests, resulting in NACKs.
+            time.sleep(0.0006)
 
     def read(self) -> int:
         if self._read_buff:
