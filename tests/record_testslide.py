@@ -55,13 +55,20 @@ class RecordTestCase(TestCase):
                             repr(value) in record_str,
                             f"Expected\n{repr(value)}\nin\n{repr(record_str)}",
                         )
-                    elif attr_type == Optional[frame_mod.Colors] and value is not None:
+                    elif (
+                        attr_type == Optional[frame_mod.Colors] and value is not None
+                    ) or attr_type == frame_mod.Priorities:
                         self.assertTrue(
                             value.name in record_str,
                             f"Expected\n{value.name}\nin\n{repr(record_str)}",
                         )
                     elif attr_type in [int, datetime.date, datetime.time] or (
-                        attr_type in [Optional[datetime.time], Optional[int]]
+                        attr_type
+                        in [
+                            Optional[datetime.time],
+                            Optional[datetime.date],
+                            Optional[int],
+                        ]
                         and value is not None
                     ):
                         self.assertTrue(
@@ -496,17 +503,93 @@ class ReminderTest(RecordTestCase):
         return frames
 
 
-# class ToDoTest(RecordTestCase):
-#     RECORD_CLASS = record_mod.ToDo
-#
-#     def get_cases_kwargs(self) -> List[Dict[str, Any]]:
-#         return [
-#             {
-#             },
-#         ]
-#
-#     def get_frames(self, kwargs: Dict[str, Any]) -> List[frame_mod.Frame]:
-#         raise NotImplementedError
+class ToDoTest(RecordTestCase):
+    RECORD_CLASS = record_mod.ToDo
+
+    def get_cases_kwargs(self) -> List[Dict[str, Any]]:
+        return [
+            {
+                "deadline_date": None,
+                "deadline_time": None,
+                "alarm": None,
+                "checked_date": None,
+                "checked_time": None,
+                "description": "Do something",
+                "priority": frame_mod.Priorities.B,
+            },
+            {
+                "deadline_date": datetime.date(2021, 2, 25),
+                "deadline_time": None,
+                "alarm": None,
+                "checked_date": None,
+                "checked_time": None,
+                "description": "Do something",
+                "priority": frame_mod.Priorities.B,
+            },
+            {
+                "deadline_date": datetime.date(2021, 2, 25),
+                "deadline_time": datetime.time(22, 11),
+                "alarm": None,
+                "checked_date": None,
+                "checked_time": None,
+                "description": "Do something",
+                "priority": frame_mod.Priorities.B,
+            },
+            {
+                "deadline_date": datetime.date(2021, 2, 25),
+                "deadline_time": None,
+                "alarm": datetime.time(21, 11),
+                "checked_date": None,
+                "checked_time": None,
+                "description": "Do something",
+                "priority": frame_mod.Priorities.B,
+            },
+            {
+                "deadline_date": datetime.date(2021, 2, 25),
+                "deadline_time": datetime.time(22, 11),
+                "alarm": datetime.time(21, 11),
+                "checked_date": None,
+                "checked_time": None,
+                "description": "Do something",
+                "priority": frame_mod.Priorities.B,
+            },
+            {
+                "deadline_date": datetime.date(2021, 2, 25),
+                "deadline_time": datetime.time(22, 11),
+                "alarm": datetime.time(21, 11),
+                "checked_date": datetime.date(2021, 2, 24),
+                "checked_time": datetime.time(23, 21),
+                "description": "Do something",
+                "priority": frame_mod.Priorities.B,
+            },
+        ]
+
+    def get_frames(self, kwargs: Dict[str, Any]) -> List[frame_mod.Frame]:
+        frames: List[frame_mod.Frame] = []
+
+        if kwargs["deadline_date"] is not None:
+            frames.append(frame_mod.DeadlineDate.from_date(kwargs["deadline_date"]))
+
+        if kwargs["deadline_time"] is not None:
+            frames.append(frame_mod.DeadlineTime.from_time(kwargs["deadline_time"]))
+
+        if kwargs["alarm"] is not None:
+            frames.append(frame_mod.ToDoAlarm.from_time(kwargs["alarm"]))
+
+        if kwargs["checked_date"] is not None:
+            frames.append(frame_mod.Date.from_date(kwargs["checked_date"]))
+
+        if kwargs["checked_time"] is not None:
+            frames.append(frame_mod.Time.from_time(kwargs["checked_time"]))
+
+        if kwargs["priority"] is not None:
+            frames.append(frame_mod.Priority.from_priority(kwargs["priority"]))
+
+        if kwargs["description"] is not None:
+            frames.extend(frame_mod.Text.from_text(kwargs["description"]))
+
+        return frames
+
 
 # class ExpenseTest(RecordTestCase):
 #     RECORD_CLASS = record_mod.Expense

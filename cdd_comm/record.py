@@ -581,6 +581,17 @@ class ToDo(Record):
 
     DESCRIPTION: str = "To Do"
 
+    def __post_init__(self) -> None:
+        if self.deadline_time is not None and self.deadline_date is None:
+            raise ValueError("Missing deadline_date")
+        if self.alarm is not None and self.deadline_date is None:
+            raise ValueError("Missing deadline_date")
+        if self.checked_time is not None:
+            if self.checked_date is None:
+                raise ValueError("Missing checked_date")
+            if self.deadline_date is None:
+                raise ValueError("Missing deadline_date")
+
     def __str__(self) -> str:
         info_str = "To Do: "
         if self.deadline_date:
@@ -594,7 +605,7 @@ class ToDo(Record):
         if self.checked_time:
             info_str += str(self.checked_time) + " "
         info_str += f"Priority: {self.priority.name} "
-        info_str += self.description + " "
+        info_str += repr(self.description) + " "
         return info_str
 
     @classmethod
@@ -642,7 +653,30 @@ class ToDo(Record):
         )
 
     def to_frames(self) -> List[frame_mod.Frame]:
-        raise NotImplementedError
+        frames: List[frame_mod.Frame] = []
+
+        if self.deadline_date is not None:
+            frames.append(frame_mod.DeadlineDate.from_date(self.deadline_date))
+
+        if self.deadline_time is not None:
+            frames.append(frame_mod.DeadlineTime.from_time(self.deadline_time))
+
+        if self.alarm is not None:
+            frames.append(frame_mod.ToDoAlarm.from_time(self.alarm))
+
+        if self.checked_date is not None:
+            frames.append(frame_mod.Date.from_date(self.checked_date))
+
+        if self.checked_time is not None:
+            frames.append(frame_mod.Time.from_time(self.checked_time))
+
+        if self.priority is not None:
+            frames.append(frame_mod.Priority.from_priority(self.priority))
+
+        if self.description is not None:
+            frames.extend(frame_mod.Text.from_text(self.description))
+
+        return frames
 
 
 @dataclass
