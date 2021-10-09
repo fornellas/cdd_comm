@@ -45,39 +45,17 @@ class Telephone(Record):
     name: str
     number: Optional[str]
     address: Optional[str]
-    field1: Optional[str]
-    field2: Optional[str]
-    field3: Optional[str]
-    field4: Optional[str]
-    field5: Optional[str]
-    field6: Optional[str]
+    free1: Optional[str]
+    free2: Optional[str]
+    free3: Optional[str]
+    free4: Optional[str]
+    free5: Optional[str]
+    free6: Optional[str]
     color: Optional[frame_mod.Colors]
 
     DIRECTORY: ClassVar[Type[frame_mod.Directory]] = frame_mod.TelephoneDirectory
 
     DESCRIPTION: str = "Telephone"
-
-    @property
-    def memo(self) -> Optional[str]:
-        """
-        CCS-8950 amalgamates various fields at a single "memo" field.
-        """
-        field_str: List[str] = []
-
-        if self.field1:
-            field_str.append(self.field1)
-        if self.field2:
-            field_str.append(self.field2)
-        if self.field3:
-            field_str.append(self.field3)
-        if self.field4:
-            field_str.append(self.field4)
-        if self.field5:
-            field_str.append(self.field5)
-        if self.field6:
-            field_str.append(self.field6)
-
-        return "\n".join(field_str)
 
     def __str__(self) -> str:
         info_str = f"Telephone: {repr(self.name)}"
@@ -85,18 +63,18 @@ class Telephone(Record):
             info_str += f", {repr(self.number)}"
         if self.address is not None:
             info_str += f", {repr(self.address)}"
-        if self.field1 is not None:
-            info_str += f", {repr(self.field1)}"
-        if self.field2 is not None:
-            info_str += f", {repr(self.field2)}"
-        if self.field3 is not None:
-            info_str += f", {repr(self.field3)}"
-        if self.field4 is not None:
-            info_str += f", {repr(self.field4)}"
-        if self.field5 is not None:
-            info_str += f", {repr(self.field5)}"
-        if self.field6 is not None:
-            info_str += f", {repr(self.field6)}"
+        if self.free1 is not None:
+            info_str += f", {repr(self.free1)}"
+        if self.free2 is not None:
+            info_str += f", {repr(self.free2)}"
+        if self.free3 is not None:
+            info_str += f", {repr(self.free3)}"
+        if self.free4 is not None:
+            info_str += f", {repr(self.free4)}"
+        if self.free5 is not None:
+            info_str += f", {repr(self.free5)}"
+        if self.free6 is not None:
+            info_str += f", {repr(self.free6)}"
         if self.color is not None:
             info_str += f" ({self.color.name})"
         return info_str
@@ -126,26 +104,26 @@ class Telephone(Record):
         address = None
         if len(fields) > 2:
             address = fields[2]
-        field1 = None
+        free1 = None
         if len(fields) > 3:
-            field1 = fields[3]
-        field2 = None
+            free1 = fields[3]
+        free2 = None
         if len(fields) > 4:
-            field2 = fields[4]
-        field3 = None
+            free2 = fields[4]
+        free3 = None
         if len(fields) > 5:
-            field3 = fields[5]
-        field4 = None
+            free3 = fields[5]
+        free4 = None
         if len(fields) > 6:
-            field4 = fields[6]
-        field5 = None
+            free4 = fields[6]
+        free5 = None
         if len(fields) > 7:
-            field5 = fields[7]
-        field6 = None
+            free5 = fields[7]
+        free6 = None
         if len(fields) > 8:
-            field6 = fields[8]
+            free6 = fields[8]
         return cls(
-            name, number, address, field1, field2, field3, field4, field5, field6, color
+            name, number, address, free1, free2, free3, free4, free5, free6, color
         )
 
     def to_frames(self) -> List[frame_mod.Frame]:
@@ -154,12 +132,12 @@ class Telephone(Record):
                 self.name,
                 self.number,
                 self.address,
-                self.field1,
-                self.field2,
-                self.field3,
-                self.field4,
-                self.field5,
-                self.field6,
+                self.free1,
+                self.free2,
+                self.free3,
+                self.free4,
+                self.free5,
+                self.free6,
             ]
         )
 
@@ -575,7 +553,7 @@ class ToDo(Record):
     checked_date: Optional[datetime.date]
     checked_time: Optional[datetime.time]
     description: str
-    priority: frame_mod.Priorities
+    priority: Optional[frame_mod.Priorities]
 
     DIRECTORY: ClassVar[Type[frame_mod.Directory]] = frame_mod.ToDoDirectory
 
@@ -594,17 +572,18 @@ class ToDo(Record):
 
     def __str__(self) -> str:
         info_str = "To Do: "
-        if self.deadline_date:
+        if self.deadline_date is not None:
             info_str += "Deadline: " + str(self.deadline_date) + " "
-        if self.deadline_time:
+        if self.deadline_time is not None:
             info_str += str(self.deadline_time) + " "
-        if self.alarm:
+        if self.alarm is not None:
             info_str += "Alarm: " + str(self.alarm) + " "
-        if self.checked_date:
+        if self.checked_date is not None:
             info_str += "Checked: " + str(self.checked_date) + " "
-        if self.checked_time:
+        if self.checked_time is not None:
             info_str += str(self.checked_time) + " "
-        info_str += f"Priority: {self.priority.name} "
+        if self.priority is not None:
+            info_str += f"Priority: {self.priority.name} "
         info_str += repr(self.description) + " "
         return info_str
 
@@ -638,9 +617,6 @@ class ToDo(Record):
 
         if description == "":
             raise ValueError("Missing description")
-
-        if priority is None:
-            raise ValueError("Missing priority")
 
         return cls(
             deadline_date,
@@ -694,18 +670,21 @@ class Expense(Record):
 
     DESCRIPTION: str = "Expense"
 
+    def __post_init__(self) -> None:
+        pass
+
     def __str__(self) -> str:
         info_str = f"Expense: {self.date}, Amount: {self.amount}"
         if self.payment_type is not None:
-            info_str += f", Payment Type: {self.payment_type}"
+            info_str += f", Payment Type: {repr(self.payment_type)}"
         if self.expense_type is not None:
-            info_str += f", Expense Type: {self.expense_type}"
+            info_str += f", Expense Type: {repr(self.expense_type)}"
         if self.rcpt is not None:
-            info_str += f", rcpt: {self.rcpt}"
+            info_str += f", rcpt: {repr(self.rcpt)}"
         if self.bus is not None:
-            info_str += f", bus: {self.bus}"
+            info_str += f", bus: {repr(self.bus)}"
         if self.description is not None:
-            info_str += f", Description: {self.description}"
+            info_str += f", Description: {repr(self.description)}"
         info_str += f" ({self.color})"
         return info_str
 
@@ -729,10 +708,8 @@ class Expense(Record):
 
         date_str = fields[0]
         assert date_str is not None
-        year_str = int(date_str[0:4])
-        month_str = int(date_str[4:6])
-        day_str = int(date_str[6:8])
-        date = datetime.date(year_str, month_str, day_str)
+        year_str, month_str, day_str = date_str.split(" ")
+        date = datetime.date(int(year_str), int(month_str), int(day_str))
 
         amount_str = fields[1]
         assert amount_str is not None
@@ -763,4 +740,29 @@ class Expense(Record):
         )
 
     def to_frames(self) -> List[frame_mod.Frame]:
-        raise NotImplementedError
+        frames: List[frame_mod.Frame] = []
+
+        if self.color is not None:
+            frames.append(frame_mod.Color.from_color(self.color))
+
+        frames.extend(
+            frame_mod.Text.from_text_list(
+                [
+                    "{} {} {}".format(
+                        self.date.year,
+                        self.date.month,
+                        self.date.day,
+                    )
+                    if self.date
+                    else "",
+                    str(self.amount),
+                    self.payment_type if self.payment_type else "",
+                    self.expense_type if self.expense_type else "",
+                    self.rcpt if self.rcpt else "",
+                    self.bus if self.bus else "",
+                    self.description if self.description else "",
+                ]
+            )
+        )
+
+        return frames

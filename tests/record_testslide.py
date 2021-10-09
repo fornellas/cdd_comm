@@ -33,7 +33,9 @@ class RecordTestCase(TestCase):
             with self.subTest(**kwargs):
                 record = self.RECORD_CLASS.from_frames(self.get_frames(kwargs))
                 for name, value in kwargs.items():
-                    self.assertEqual(getattr(record, name), value)
+                    self.assertEqual(
+                        getattr(record, name), value, f"Expected {name} to be {value}"
+                    )
 
     def test_to_frames(self) -> None:
         for kwargs in self.get_cases_kwargs():
@@ -56,13 +58,15 @@ class RecordTestCase(TestCase):
                             f"Expected\n{repr(value)}\nin\n{repr(record_str)}",
                         )
                     elif (
-                        attr_type == Optional[frame_mod.Colors] and value is not None
-                    ) or attr_type == frame_mod.Priorities:
+                        attr_type
+                        in [Optional[frame_mod.Colors], Optional[frame_mod.Priorities]]
+                        and value is not None
+                    ):
                         self.assertTrue(
                             value.name in record_str,
                             f"Expected\n{value.name}\nin\n{repr(record_str)}",
                         )
-                    elif attr_type in [int, datetime.date, datetime.time] or (
+                    elif attr_type in [int, float, datetime.date, datetime.time] or (
                         attr_type
                         in [
                             Optional[datetime.time],
@@ -119,72 +123,72 @@ class TelephoneTest(RecordTestCase):
                 "name": "John Doe",
                 "number": None,
                 "address": None,
-                "field1": None,
-                "field2": None,
-                "field3": None,
-                "field4": None,
-                "field5": None,
-                "field6": None,
+                "free1": None,
+                "free2": None,
+                "free3": None,
+                "free4": None,
+                "free5": None,
+                "free6": None,
                 "color": None,
             },
             {
                 "name": "John Doe",
                 "number": "123-456",
                 "address": None,
-                "field1": None,
-                "field2": None,
-                "field3": None,
-                "field4": None,
-                "field5": None,
-                "field6": None,
+                "free1": None,
+                "free2": None,
+                "free3": None,
+                "free4": None,
+                "free5": None,
+                "free6": None,
                 "color": None,
             },
             {
                 "name": "John Doe",
                 "number": None,
                 "address": "Nowhere St",
-                "field1": None,
-                "field2": None,
-                "field3": None,
-                "field4": None,
-                "field5": None,
-                "field6": None,
+                "free1": None,
+                "free2": None,
+                "free3": None,
+                "free4": None,
+                "free5": None,
+                "free6": None,
                 "color": None,
             },
             {
                 "name": "John Doe",
                 "number": "123-456",
                 "address": None,
-                "field1": None,
-                "field2": None,
-                "field3": None,
-                "field4": None,
-                "field5": None,
-                "field6": None,
+                "free1": None,
+                "free2": None,
+                "free3": None,
+                "free4": None,
+                "free5": None,
+                "free6": None,
                 "color": frame_mod.Colors.GREEN,
             },
             {
                 "name": "John Doe",
                 "number": "123-456",
                 "address": "Nowhere St",
-                "field1": "Field 1",
-                "field2": None,
-                "field3": "Field 3",
-                "field4": "Field 4",
-                "field5": None,
-                "field6": "Field 6",
+                "free1": "free 1",
+                "free2": None,
+                "free3": "free 3",
+                "free4": "free 4",
+                "free5": None,
+                "free6": "free 6",
                 "color": None,
             },
             {
                 "name": "John Doe",
                 "number": "123-456",
                 "address": "Nowhere St",
-                "field1": "Field 1",
-                "field2": "Field 2",
-                "field3": "Field 3",
-                "field4": "Field 4",
-                "field5": "Field 5",
-                "field6": "Field 6",
+                "free1": "free 1",
+                "free2": "free 2",
+                "free3": "free 3",
+                "free4": "free 4",
+                "free5": "free 5",
+                "free6": "free 6",
                 "color": frame_mod.Colors.GREEN,
             },
         ]
@@ -195,12 +199,12 @@ class TelephoneTest(RecordTestCase):
                 kwargs["name"],
                 kwargs["number"],
                 kwargs["address"],
-                kwargs["field1"],
-                kwargs["field2"],
-                kwargs["field3"],
-                kwargs["field4"],
-                kwargs["field5"],
-                kwargs["field6"],
+                kwargs["free1"],
+                kwargs["free2"],
+                kwargs["free3"],
+                kwargs["free4"],
+                kwargs["free5"],
+                kwargs["free6"],
             ]
         )
 
@@ -515,6 +519,15 @@ class ToDoTest(RecordTestCase):
                 "checked_date": None,
                 "checked_time": None,
                 "description": "Do something",
+                "priority": None,
+            },
+            {
+                "deadline_date": None,
+                "deadline_time": None,
+                "alarm": None,
+                "checked_date": None,
+                "checked_time": None,
+                "description": "Do something",
                 "priority": frame_mod.Priorities.B,
             },
             {
@@ -591,14 +604,47 @@ class ToDoTest(RecordTestCase):
         return frames
 
 
-# class ExpenseTest(RecordTestCase):
-#     RECORD_CLASS = record_mod.Expense
-#
-#     def get_cases_kwargs(self) -> List[Dict[str, Any]]:
-#         return [
-#             {
-#             },
-#         ]
-#
-#     def get_frames(self, kwargs: Dict[str, Any]) -> List[frame_mod.Frame]:
-#         raise NotImplementedError
+class ExpenseTest(RecordTestCase):
+    RECORD_CLASS = record_mod.Expense
+
+    def get_cases_kwargs(self) -> List[Dict[str, Any]]:
+        return [
+            {
+                "date": datetime.date(2021, 2, 23),
+                "amount": 33.44,
+                "payment_type": "Visa",
+                "expense_type": "Entertainment",
+                "rcpt": None,
+                "bus": None,
+                "description": "Movies",
+                "color": frame_mod.Colors.ORANGE,
+            },
+        ]
+
+    def get_frames(self, kwargs: Dict[str, Any]) -> List[frame_mod.Frame]:
+        frames: List[frame_mod.Frame] = []
+
+        if kwargs["color"] is not None:
+            frames.append(frame_mod.Color.from_color(kwargs["color"]))
+
+        frames.extend(
+            frame_mod.Text.from_text_list(
+                [
+                    "{} {} {}".format(
+                        kwargs["date"].year,
+                        kwargs["date"].month,
+                        kwargs["date"].day,
+                    )
+                    if kwargs["date"]
+                    else "",
+                    str(kwargs["amount"]),
+                    kwargs["payment_type"] if kwargs["payment_type"] else "",
+                    kwargs["expense_type"] if kwargs["expense_type"] else "",
+                    kwargs["rcpt"] if kwargs["rcpt"] else "",
+                    kwargs["bus"] if kwargs["bus"] else "",
+                    kwargs["description"] if kwargs["description"] else "",
+                ]
+            )
+        )
+
+        return frames
