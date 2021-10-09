@@ -57,6 +57,9 @@ class Telephone(Record):
 
     DESCRIPTION: str = "Telephone"
 
+    def __post_init__(self) -> None:
+        self.to_frames()
+
     def __str__(self) -> str:
         info_str = f"Telephone: {repr(self.name)}"
         if self.number is not None:
@@ -167,6 +170,9 @@ class BusinessCard(Record):
 
     DESCRIPTION: str = "Business Card"
 
+    def __post_init__(self) -> None:
+        self.to_frames()
+
     def __str__(self) -> str:
         return f"Business Card: {repr(self.employer)}, {repr(self.name)}, {repr(self.telephone_number)}, {repr(self.telex_number)}, {repr(self.fax_number)}, {repr(self.position)}, {repr(self.department)}, {repr(self.po_box)}, {repr(self.address)}, {repr(self.memo)} ({self.color})"
 
@@ -264,6 +270,9 @@ class Memo(Record):
 
     DESCRIPTION: str = "Memo"
 
+    def __post_init__(self) -> None:
+        self.to_frames()
+
     def __str__(self) -> str:
         info_str = f"Memo: {repr(self.text)}"
         if self.color is not None:
@@ -308,6 +317,9 @@ class Calendar(Record):
     DIRECTORY: ClassVar[Type[frame_mod.Directory]] = frame_mod.CalendarDirectory
 
     DESCRIPTION: str = "Calendar"
+
+    def __post_init__(self) -> None:
+        self.to_frames()
 
     def __str__(self) -> str:
         info_list = []
@@ -384,6 +396,7 @@ class Schedule(Record):
             raise ValueError("can't set end time without start time")
         if self.alarm_time is not None and self.start_time is None:
             raise ValueError("cant set alarm time without start time")
+        self.to_frames()
 
     def __str__(self) -> str:
         info_str = f"Schedule: {self.date}, {self.start_time}, {self.end_time}, {self.alarm_time}, {self.illustration}, {repr(self.description)}"
@@ -480,6 +493,7 @@ class Reminder(Record):
     def __post_init__(self) -> None:
         if self.month is not None and self.day is None:
             raise ValueError("cant set month without day")
+        self.to_frames()
 
     def __str__(self) -> str:
         info_str = "Reminder: "
@@ -569,6 +583,7 @@ class ToDo(Record):
                 raise ValueError("Missing checked_date")
             if self.deadline_date is None:
                 raise ValueError("Missing deadline_date")
+        self.to_frames()
 
     def __str__(self) -> str:
         info_str = "To Do: "
@@ -671,7 +686,7 @@ class Expense(Record):
     DESCRIPTION: str = "Expense"
 
     def __post_init__(self) -> None:
-        pass
+        self.to_frames()
 
     def __str__(self) -> str:
         info_str = f"Expense: {self.date}, Amount: {self.amount}"

@@ -659,6 +659,9 @@ class DayHighlight(Frame):
 
     @classmethod
     def from_days(cls, days: Set[int]) -> "DayHighlight":
+        if len(days) > cls.LENGTH * 8:
+            raise ValueError("Invalid number of days")
+
         data: List[int] = [0] * cls.LENGTH
 
         for day in days:
