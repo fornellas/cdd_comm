@@ -1,10 +1,91 @@
 import datetime
-from typing import List, Optional, Set
+from typing import Any, ClassVar, Dict, List, Optional, Type, get_type_hints
 
 from testslide import TestCase
 
 import cdd_comm.frame as frame_mod
 import cdd_comm.record as record_mod
+
+
+class RecordTestCase(TestCase):
+    RECORD_CLASS: ClassVar[Type[record_mod.Record]]
+
+    def run(self, result=None):
+        if type(self) is RecordTestCase:
+            return
+        else:
+            super().run(result=result)
+
+    def test_DESCRIPTION(self) -> None:
+        self.assertNotEqual(self.RECORD_CLASS.DESCRIPTION, "Record")
+
+    def test_DIRECTORY(self) -> None:
+        self.assertTrue(issubclass(self.RECORD_CLASS.DIRECTORY, frame_mod.Directory))
+
+    def get_cases_kwargs(self) -> List[Dict[str, Any]]:
+        raise NotImplementedError
+
+    def get_frames(self, kwargs: Dict[str, Any]) -> List[frame_mod.Frame]:
+        raise NotImplementedError
+
+    def test_from_frames(self) -> None:
+        for kwargs in self.get_cases_kwargs():
+            with self.subTest(**kwargs):
+                record = self.RECORD_CLASS.from_frames(self.get_frames(kwargs))
+                for name, value in kwargs.items():
+                    self.assertEqual(getattr(record, name), value)
+
+    def test_to_frames(self) -> None:
+        for kwargs in self.get_cases_kwargs():
+            with self.subTest(**kwargs):
+                frames = self.RECORD_CLASS(**kwargs).to_frames()  # type: ignore[call-arg]
+                expected_frames = self.get_frames(kwargs)
+                self.assertEqual(frames, expected_frames)
+
+    def test__str__(self) -> None:
+        for kwargs in self.get_cases_kwargs():
+            with self.subTest(**kwargs):
+                record_str = str(self.RECORD_CLASS(**kwargs))  # type: ignore[call-arg]
+                for name, value in kwargs.items():
+                    attr_type = get_type_hints(self.RECORD_CLASS)[name]
+                    if attr_type == str or (
+                        attr_type == Optional[str] and value is not None
+                    ):
+                        self.assertTrue(
+                            repr(value) in record_str,
+                            f"Expected\n{repr(value)}\nin\n{repr(record_str)}",
+                        )
+                    elif attr_type == Optional[frame_mod.Colors] and value is not None:
+                        self.assertTrue(
+                            value.name in record_str,
+                            f"Expected\n{value.name}\nin\n{repr(record_str)}",
+                        )
+                    elif attr_type in [int, datetime.date, datetime.time] or (
+                        attr_type in [Optional[datetime.time], Optional[int]]
+                        and value is not None
+                    ):
+                        self.assertTrue(
+                            str(value) in record_str,
+                            f"Expected\n{value}\nin\n{repr(record_str)}",
+                        )
+                    elif attr_type == record_mod.CalendarDays:
+                        for day in value:
+                            self.assertTrue(
+                                str(day) in record_str,
+                                f"Expected\n{day}\nin\n{repr(record_str)}",
+                            )
+                    elif (
+                        attr_type == record_mod.CalendarDayColors and value is not None
+                    ):
+                        for color in value:
+                            self.assertTrue(
+                                color.name[0].lower() in record_str,
+                                f"Expected\n{color.name[0].lower()}\nin\n{repr(record_str)}",
+                            )
+                    elif value is None:
+                        pass
+                    else:
+                        raise RuntimeError("Unexpected type: ", attr_type)
 
 
 def _raw_list_to_text_list(raw_list: List[Optional[str]]) -> List[str]:
@@ -22,735 +103,365 @@ def _raw_list_to_text_list(raw_list: List[Optional[str]]) -> List[str]:
     return text_list
 
 
-class TelephoneTest(TestCase):
-    NAME: str = "John Doe"
-    NUMBER: str = "123-456"
-    ADDRESS: str = "Nowhere St"
-    FIELD1: str = "Field 1"
-    FIELD2: str = "Field 2"
-    FIELD3: str = "Field 3"
-    FIELD4: str = "Field 4"
-    FIELD5: str = "Field 5"
-    FIELD6: str = "Field 6"
-    COLOR: frame_mod.Colors = frame_mod.Colors.GREEN
+class TelephoneTest(RecordTestCase):
+    RECORD_CLASS = record_mod.Telephone
 
-    def _get_frames(
-        self,
-        name: str,
-        number: Optional[str] = None,
-        address: Optional[str] = None,
-        field1: Optional[str] = None,
-        field2: Optional[str] = None,
-        field3: Optional[str] = None,
-        field4: Optional[str] = None,
-        field5: Optional[str] = None,
-        field6: Optional[str] = None,
-        color: Optional[frame_mod.Colors] = None,
-    ) -> List[frame_mod.Frame]:
+    def get_cases_kwargs(self) -> List[Dict[str, Any]]:
+        return [
+            {
+                "name": "John Doe",
+                "number": None,
+                "address": None,
+                "field1": None,
+                "field2": None,
+                "field3": None,
+                "field4": None,
+                "field5": None,
+                "field6": None,
+                "color": None,
+            },
+            {
+                "name": "John Doe",
+                "number": "123-456",
+                "address": None,
+                "field1": None,
+                "field2": None,
+                "field3": None,
+                "field4": None,
+                "field5": None,
+                "field6": None,
+                "color": None,
+            },
+            {
+                "name": "John Doe",
+                "number": None,
+                "address": "Nowhere St",
+                "field1": None,
+                "field2": None,
+                "field3": None,
+                "field4": None,
+                "field5": None,
+                "field6": None,
+                "color": None,
+            },
+            {
+                "name": "John Doe",
+                "number": "123-456",
+                "address": None,
+                "field1": None,
+                "field2": None,
+                "field3": None,
+                "field4": None,
+                "field5": None,
+                "field6": None,
+                "color": frame_mod.Colors.GREEN,
+            },
+            {
+                "name": "John Doe",
+                "number": "123-456",
+                "address": "Nowhere St",
+                "field1": "Field 1",
+                "field2": None,
+                "field3": "Field 3",
+                "field4": "Field 4",
+                "field5": None,
+                "field6": "Field 6",
+                "color": None,
+            },
+            {
+                "name": "John Doe",
+                "number": "123-456",
+                "address": "Nowhere St",
+                "field1": "Field 1",
+                "field2": "Field 2",
+                "field3": "Field 3",
+                "field4": "Field 4",
+                "field5": "Field 5",
+                "field6": "Field 6",
+                "color": frame_mod.Colors.GREEN,
+            },
+        ]
+
+    def get_frames(self, kwargs: Dict[str, Any]) -> List[frame_mod.Frame]:
         text_list = _raw_list_to_text_list(
             [
-                name,
-                number,
-                address,
-                field1,
-                field2,
-                field3,
-                field4,
-                field5,
-                field6,
+                kwargs["name"],
+                kwargs["number"],
+                kwargs["address"],
+                kwargs["field1"],
+                kwargs["field2"],
+                kwargs["field3"],
+                kwargs["field4"],
+                kwargs["field5"],
+                kwargs["field6"],
             ]
         )
 
         frames: List[frame_mod.Frame] = []
-        if color is not None:
-            frames.append(frame_mod.Color.from_color(color))
+        if kwargs["color"] is not None:
+            frames.append(frame_mod.Color.from_color(kwargs["color"]))
 
         frames.extend(frame_mod.Text.from_text_list(text_list))
 
         return frames
 
-    def _assert_telephone(
-        self,
-        name: str,
-        number: Optional[str] = None,
-        address: Optional[str] = None,
-        field1: Optional[str] = None,
-        field2: Optional[str] = None,
-        field3: Optional[str] = None,
-        field4: Optional[str] = None,
-        field5: Optional[str] = None,
-        field6: Optional[str] = None,
-        color: Optional[frame_mod.Colors] = None,
-    ) -> None:
-        frames = self._get_frames(
-            name,
-            number,
-            address,
-            field1,
-            field2,
-            field3,
-            field4,
-            field5,
-            field6,
-            color,
-        )
 
-        telephone = record_mod.Telephone.from_frames(frames)
-        self.assertEqual(telephone.color, color)
-        self.assertEqual(telephone.name, name)
-        self.assertEqual(telephone.address, address)
-        self.assertEqual(telephone.field1, field1)
-        self.assertEqual(telephone.field2, field2)
-        self.assertEqual(telephone.field3, field3)
-        self.assertEqual(telephone.field4, field4)
-        self.assertEqual(telephone.field5, field5)
-        self.assertEqual(telephone.field6, field6)
+class BusinessCardTest(RecordTestCase):
+    RECORD_CLASS = record_mod.BusinessCard
 
-    def test_from_frames(self) -> None:
-        self._assert_telephone(
-            name=self.NAME,
-        )
-        self._assert_telephone(
-            name=self.NAME,
-            number=self.NUMBER,
-        )
-        self._assert_telephone(
-            name=self.NAME,
-            address=self.ADDRESS,
-        )
-        self._assert_telephone(
-            name=self.NAME,
-            number=self.NUMBER,
-            color=self.COLOR,
-        )
-        self._assert_telephone(
-            name=self.NAME,
-            number=self.NUMBER,
-            address=self.ADDRESS,
-            field1=self.FIELD1,
-            field3=self.FIELD3,
-            field4=self.FIELD4,
-            field6=self.FIELD6,
-        )
-        self._assert_telephone(
-            name=self.NAME,
-            number=self.NUMBER,
-            address=self.ADDRESS,
-            field1=self.FIELD1,
-            field2=self.FIELD2,
-            field3=self.FIELD3,
-            field4=self.FIELD4,
-            field5=self.FIELD5,
-            field6=self.FIELD6,
-            color=self.COLOR,
-        )
+    def get_cases_kwargs(self) -> List[Dict[str, Any]]:
+        return [
+            {
+                "employer": "Acme Inc",
+                "name": "John Doe",
+                "telephone_number": None,
+                "telex_number": None,
+                "fax_number": None,
+                "position": None,
+                "department": None,
+                "po_box": None,
+                "address": None,
+                "memo": None,
+                "color": None,
+            },
+            {
+                "employer": "Acme Inc",
+                "name": "John Doe",
+                "telephone_number": "123-456",
+                "telex_number": None,
+                "fax_number": None,
+                "position": None,
+                "department": None,
+                "po_box": None,
+                "address": None,
+                "memo": None,
+                "color": None,
+            },
+            {
+                "employer": "Acme Inc",
+                "name": "John Doe",
+                "telephone_number": "123-456",
+                "telex_number": "456-789",
+                "fax_number": None,
+                "position": None,
+                "department": "Engineering",
+                "po_box": None,
+                "address": "Nowhere St",
+                "memo": "NIce guy",
+                "color": frame_mod.Colors.GREEN,
+            },
+            {
+                "employer": "Acme Inc",
+                "name": "John Doe",
+                "telephone_number": "123-456",
+                "telex_number": "456-789",
+                "fax_number": "789-123",
+                "position": "Engineer",
+                "department": "Engineering",
+                "po_box": "12345",
+                "address": "Nowhere St",
+                "memo": "NIce guy",
+                "color": frame_mod.Colors.GREEN,
+            },
+        ]
 
-    def _assert_frames(
-        self,
-        name: str,
-        number: Optional[str] = None,
-        address: Optional[str] = None,
-        field1: Optional[str] = None,
-        field2: Optional[str] = None,
-        field3: Optional[str] = None,
-        field4: Optional[str] = None,
-        field5: Optional[str] = None,
-        field6: Optional[str] = None,
-        color: Optional[frame_mod.Colors] = None,
-    ) -> None:
-        frames = record_mod.Telephone(
-            name,
-            number,
-            address,
-            field1,
-            field2,
-            field3,
-            field4,
-            field5,
-            field6,
-            color,
-        ).to_frames()
-
-        expected_frames = self._get_frames(
-            name,
-            number,
-            address,
-            field1,
-            field2,
-            field3,
-            field4,
-            field5,
-            field6,
-            color,
-        )
-
-        self.assertEqual(frames, expected_frames)
-
-    def test_to_frames(self) -> None:
-        self._assert_frames(
-            name=self.NAME,
-        )
-        self._assert_frames(
-            name=self.NAME,
-            number=self.NUMBER,
-        )
-        self._assert_frames(
-            name=self.NAME,
-            address=self.ADDRESS,
-        )
-        self._assert_frames(
-            name=self.NAME,
-            number=self.NUMBER,
-            color=self.COLOR,
-        )
-        self._assert_frames(
-            name=self.NAME,
-            number=self.NUMBER,
-            address=self.ADDRESS,
-            field1=self.FIELD1,
-            field3=self.FIELD3,
-            field4=self.FIELD4,
-            field6=self.FIELD6,
-        )
-        self._assert_frames(
-            name=self.NAME,
-            number=self.NUMBER,
-            address=self.ADDRESS,
-            field1=self.FIELD1,
-            field2=self.FIELD2,
-            field3=self.FIELD3,
-            field4=self.FIELD4,
-            field5=self.FIELD5,
-            field6=self.FIELD6,
-            color=self.COLOR,
-        )
-
-
-class BusinessCardTest(TestCase):
-    EMPLOYER: str = "Acme Inc"
-    NAME: str = "John Doe"
-    TELEPHONE_NUMBER: str = "123-456"
-    TELEX_NUMBER: str = "456-789"
-    FAX_NUMBER: str = "789-123"
-    POSITION: str = "Engineer"
-    DEPARTMENT: str = "Engineering"
-    PO_BOX: str = "134235"
-    ADDRESS: str = "Nowhere St"
-    MEMO: str = "Nice guy"
-    COLOR: frame_mod.Colors = frame_mod.Colors.GREEN
-
-    def _get_frames(
-        self,
-        employer: str,
-        name: str,
-        telephone_number: Optional[str] = None,
-        telex_number: Optional[str] = None,
-        fax_number: Optional[str] = None,
-        position: Optional[str] = None,
-        department: Optional[str] = None,
-        po_box: Optional[str] = None,
-        address: Optional[str] = None,
-        memo: Optional[str] = None,
-        color: Optional[frame_mod.Colors] = None,
-    ) -> List[frame_mod.Frame]:
+    def get_frames(self, kwargs: Dict[str, Any]) -> List[frame_mod.Frame]:
         text_list = _raw_list_to_text_list(
             [
-                employer,
-                name,
-                telephone_number,
-                telex_number,
-                fax_number,
-                position,
-                department,
-                po_box,
-                address,
-                memo,
+                kwargs["employer"],
+                kwargs["name"],
+                kwargs["telephone_number"],
+                kwargs["telex_number"],
+                kwargs["fax_number"],
+                kwargs["position"],
+                kwargs["department"],
+                kwargs["po_box"],
+                kwargs["address"],
+                kwargs["memo"],
             ]
         )
 
         frames: List[frame_mod.Frame] = []
-        if color is not None:
-            frames.append(frame_mod.Color.from_color(color))
+        if kwargs["color"] is not None:
+            frames.append(frame_mod.Color.from_color(kwargs["color"]))
 
         frames.extend(frame_mod.Text.from_text_list(text_list))
 
         return frames
 
-    def _assert_business_card(
-        self,
-        employer: str,
-        name: str,
-        telephone_number: Optional[str] = None,
-        telex_number: Optional[str] = None,
-        fax_number: Optional[str] = None,
-        position: Optional[str] = None,
-        department: Optional[str] = None,
-        po_box: Optional[str] = None,
-        address: Optional[str] = None,
-        memo: Optional[str] = None,
-        color: Optional[frame_mod.Colors] = None,
-    ) -> None:
-        frames = self._get_frames(
-            employer,
-            name,
-            telephone_number,
-            telex_number,
-            fax_number,
-            position,
-            department,
-            po_box,
-            address,
-            memo,
-            color,
-        )
 
-        business_card = record_mod.BusinessCard.from_frames(frames)
-        self.assertEqual(business_card.employer, employer)
-        self.assertEqual(business_card.name, name)
-        self.assertEqual(business_card.telephone_number, telephone_number)
-        self.assertEqual(business_card.telex_number, telex_number)
-        self.assertEqual(business_card.fax_number, fax_number)
-        self.assertEqual(business_card.position, position)
-        self.assertEqual(business_card.department, department)
-        self.assertEqual(business_card.po_box, po_box)
-        self.assertEqual(business_card.address, address)
-        self.assertEqual(business_card.memo, memo)
-        self.assertEqual(business_card.color, color)
+class MemoTest(RecordTestCase):
+    RECORD_CLASS = record_mod.Memo
 
-    def test_from_frames(self) -> None:
-        self._assert_business_card(
-            employer=self.EMPLOYER,
-            name=self.NAME,
-        )
+    def get_cases_kwargs(self) -> List[Dict[str, Any]]:
+        return [
+            {
+                "text": "Hello\nWorld",
+                "color": frame_mod.Colors.ORANGE,
+            },
+        ]
 
-        self._assert_business_card(
-            employer=self.EMPLOYER,
-            name=self.NAME,
-            telephone_number=self.TELEPHONE_NUMBER,
-        )
-
-        self._assert_business_card(
-            employer=self.EMPLOYER,
-            name=self.NAME,
-            telephone_number=self.TELEPHONE_NUMBER,
-            telex_number=self.TELEX_NUMBER,
-            department=self.DEPARTMENT,
-            address=self.ADDRESS,
-            memo=self.MEMO,
-            color=self.COLOR,
-        )
-
-        self._assert_business_card(
-            employer=self.EMPLOYER,
-            name=self.NAME,
-            telephone_number=self.TELEPHONE_NUMBER,
-            telex_number=self.TELEX_NUMBER,
-            fax_number=self.FAX_NUMBER,
-            position=self.POSITION,
-            department=self.DEPARTMENT,
-            po_box=self.PO_BOX,
-            address=self.ADDRESS,
-            memo=self.MEMO,
-            color=self.COLOR,
-        )
-
-    def _assert_frames(
-        self,
-        employer: str,
-        name: str,
-        telephone_number: Optional[str] = None,
-        telex_number: Optional[str] = None,
-        fax_number: Optional[str] = None,
-        position: Optional[str] = None,
-        department: Optional[str] = None,
-        po_box: Optional[str] = None,
-        address: Optional[str] = None,
-        memo: Optional[str] = None,
-        color: Optional[frame_mod.Colors] = None,
-    ) -> None:
-        frames = record_mod.BusinessCard(
-            employer,
-            name,
-            telephone_number,
-            telex_number,
-            fax_number,
-            position,
-            department,
-            po_box,
-            address,
-            memo,
-            color,
-        ).to_frames()
-
-        expected_frames = self._get_frames(
-            employer,
-            name,
-            telephone_number,
-            telex_number,
-            fax_number,
-            position,
-            department,
-            po_box,
-            address,
-            memo,
-            color,
-        )
-
-        self.assertEqual(frames, expected_frames)
-
-    def test_to_frames(self) -> None:
-        self._assert_frames(
-            employer=self.EMPLOYER,
-            name=self.NAME,
-        )
-
-        self._assert_frames(
-            employer=self.EMPLOYER,
-            name=self.NAME,
-            telephone_number=self.TELEPHONE_NUMBER,
-        )
-
-        self._assert_frames(
-            employer=self.EMPLOYER,
-            name=self.NAME,
-            telephone_number=self.TELEPHONE_NUMBER,
-            telex_number=self.TELEX_NUMBER,
-            department=self.DEPARTMENT,
-            address=self.ADDRESS,
-            memo=self.MEMO,
-            color=self.COLOR,
-        )
-
-        self._assert_frames(
-            employer=self.EMPLOYER,
-            name=self.NAME,
-            telephone_number=self.TELEPHONE_NUMBER,
-            telex_number=self.TELEX_NUMBER,
-            fax_number=self.FAX_NUMBER,
-            position=self.POSITION,
-            department=self.DEPARTMENT,
-            po_box=self.PO_BOX,
-            address=self.ADDRESS,
-            memo=self.MEMO,
-            color=self.COLOR,
-        )
-
-
-class MemoTest(TestCase):
-    TEXT: str = "Hello\nWorld"
-    COLOR: frame_mod.Colors = frame_mod.Colors.GREEN
-
-    def _get_frames(
-        self, text: str, color: Optional[frame_mod.Colors]
-    ) -> List[frame_mod.Frame]:
+    def get_frames(self, kwargs: Dict[str, Any]) -> List[frame_mod.Frame]:
         frames: List[frame_mod.Frame] = []
-        if color is not None:
-            frames.append(frame_mod.Color.from_color(color))
-        frames.extend(frame_mod.Text.from_text_list([text]))
+        if kwargs["color"] is not None:
+            frames.append(frame_mod.Color.from_color(kwargs["color"]))
+        frames.extend(frame_mod.Text.from_text_list([kwargs["text"]]))
         return frames
 
-    def test_from_frames(self) -> None:
-        memo = record_mod.Memo.from_frames(self._get_frames(self.TEXT, self.COLOR))
-        self.assertEqual(memo.text, self.TEXT)
-        self.assertEqual(memo.color, self.COLOR)
 
-        memo = record_mod.Memo.from_frames(self._get_frames(self.TEXT, None))
-        self.assertEqual(memo.text, self.TEXT)
-        self.assertEqual(memo.color, None)
+class CalendarTest(RecordTestCase):
+    RECORD_CLASS = record_mod.Calendar
 
-    def test_to_frames(self) -> None:
-        self.assertEqual(
-            record_mod.Memo(self.TEXT, self.COLOR).to_frames(),
-            self._get_frames(self.TEXT, self.COLOR),
-        )
+    def get_cases_kwargs(self) -> List[Dict[str, Any]]:
+        return [
+            {
+                "year": 2021,
+                "month": 12,
+                "days": {1, 10, 19, 28},
+                "colors": None,
+            },
+            {
+                "year": 2021,
+                "month": 12,
+                "days": {1, 10, 19, 28},
+                "colors": (
+                    [frame_mod.Colors.BLUE] * 10
+                    + [frame_mod.Colors.GREEN] * 10
+                    + [frame_mod.Colors.ORANGE] * 11
+                ),
+            },
+        ]
 
-
-class CalendarTest(TestCase):
-    YEAR: int = 2021
-    MONTH: int = 12
-    DAYS: Set[int] = {1, 10, 19, 28}
-    COLORS: List[frame_mod.Colors] = (
-        [frame_mod.Colors.BLUE] * 10
-        + [frame_mod.Colors.GREEN] * 10
-        + [frame_mod.Colors.ORANGE] * 11
-    )
-
-    def _get_frames(
-        self,
-        year: int,
-        month: int,
-        days: Set[int],
-        colors: Optional[List[frame_mod.Colors]],
-    ) -> List[frame_mod.Frame]:
+    def get_frames(self, kwargs: Dict[str, Any]) -> List[frame_mod.Frame]:
         frames: List[frame_mod.Frame] = []
-        frames.append(frame_mod.Date.from_date(datetime.date(year, month, 1)))
-        frames.append(frame_mod.DayHighlight.from_days(days))
-        if colors is not None:
+        frames.append(
+            frame_mod.Date.from_date(datetime.date(kwargs["year"], kwargs["month"], 1))
+        )
+        frames.append(frame_mod.DayHighlight.from_days(kwargs["days"]))
+        if kwargs["colors"] is not None:
             frames.append(
                 frame_mod.DayColorHighlight.from_days_and_colors(
-                    days,
-                    colors,
+                    kwargs["days"],
+                    kwargs["colors"],
                 )
             )
         return frames
 
-    def test_from_frames(self) -> None:
-        calendar = record_mod.Calendar.from_frames(
-            self._get_frames(
-                year=self.YEAR,
-                month=self.MONTH,
-                days=self.DAYS,
-                colors=None,
-            )
-        )
-        self.assertEqual(calendar.year, self.YEAR)
-        self.assertEqual(calendar.month, self.MONTH)
-        self.assertEqual(calendar.days, self.DAYS)
-        self.assertEqual(calendar.colors, None)
 
-        calendar = record_mod.Calendar.from_frames(
-            self._get_frames(
-                year=self.YEAR,
-                month=self.MONTH,
-                days=self.DAYS,
-                colors=self.COLORS,
-            )
-        )
-        self.assertEqual(calendar.year, self.YEAR)
-        self.assertEqual(calendar.month, self.MONTH)
-        self.assertEqual(calendar.days, self.DAYS)
-        self.assertEqual(calendar.colors, self.COLORS)
+class ScheduleTest(RecordTestCase):
+    RECORD_CLASS = record_mod.Schedule
 
-    def test_to_frames(self) -> None:
-        self.assertEqual(
-            record_mod.Calendar(self.YEAR, self.MONTH, self.DAYS, None).to_frames(),
-            self._get_frames(
-                year=self.YEAR,
-                month=self.MONTH,
-                days=self.DAYS,
-                colors=None,
-            ),
-        )
+    def get_cases_kwargs(self) -> List[Dict[str, Any]]:
+        return [
+            {
+                "date": datetime.date(2020, 11, 1),
+                "start_time": None,
+                "end_time": None,
+                "alarm_time": None,
+                "illustration": None,
+                "description": "do something",
+                "color": None,
+            },
+            {
+                "date": datetime.date(2020, 11, 1),
+                "start_time": datetime.time(23, 3),
+                "end_time": None,
+                "alarm_time": None,
+                "illustration": None,
+                "description": None,
+                "color": None,
+            },
+            {
+                "date": datetime.date(2020, 11, 1),
+                "start_time": datetime.time(22, 3),
+                "end_time": datetime.time(23, 4),
+                "alarm_time": None,
+                "illustration": None,
+                "description": None,
+                "color": None,
+            },
+            {
+                "date": datetime.date(2020, 11, 1),
+                "start_time": datetime.time(22, 3),
+                "end_time": datetime.time(23, 4),
+                "alarm_time": datetime.time(21, 0),
+                "illustration": None,
+                "description": None,
+                "color": None,
+            },
+            {
+                "date": datetime.date(2020, 11, 1),
+                "start_time": datetime.time(22, 3),
+                "end_time": datetime.time(23, 4),
+                "alarm_time": datetime.time(21, 0),
+                "illustration": 3,
+                "description": "Do something",
+                "color": frame_mod.Colors.ORANGE,
+            },
+        ]
 
-        self.assertEqual(
-            record_mod.Calendar(
-                self.YEAR, self.MONTH, self.DAYS, self.COLORS
-            ).to_frames(),
-            self._get_frames(
-                year=self.YEAR,
-                month=self.MONTH,
-                days=self.DAYS,
-                colors=self.COLORS,
-            ),
-        )
-
-
-class ScheduleTest(TestCase):
-    def _get_frames(
-        self,
-        date: datetime.date,
-        start_time: Optional[datetime.time],
-        end_time: Optional[datetime.time],
-        alarm_time: Optional[datetime.time],
-        illustration: Optional[int],
-        description: Optional[str],
-        color: Optional[frame_mod.Colors],
-    ) -> List[frame_mod.Frame]:
+    def get_frames(self, kwargs: Dict[str, Any]) -> List[frame_mod.Frame]:
         frames: List[frame_mod.Frame] = []
 
-        frames.append(frame_mod.Date.from_date(date))
+        frames.append(frame_mod.Date.from_date(kwargs["date"]))
 
-        if start_time is not None:
-            if end_time is None:
-                frames.append(frame_mod.Time.from_time(start_time))
+        if kwargs["start_time"] is not None:
+            if kwargs["end_time"] is None:
+                frames.append(frame_mod.Time.from_time(kwargs["start_time"]))
             else:
                 frames.append(
-                    frame_mod.StartEndTime.from_start_end_times(start_time, end_time)
+                    frame_mod.StartEndTime.from_start_end_times(
+                        kwargs["start_time"], kwargs["end_time"]
+                    )
                 )
 
-        if alarm_time is not None:
-            frames.append(frame_mod.Alarm.from_time(alarm_time))
+        if kwargs["alarm_time"] is not None:
+            frames.append(frame_mod.Alarm.from_time(kwargs["alarm_time"]))
 
-        if illustration is not None:
-            frames.append(frame_mod.Illustration.from_number(illustration))
+        if kwargs["illustration"] is not None:
+            frames.append(frame_mod.Illustration.from_number(kwargs["illustration"]))
 
-        if color is not None:
-            frames.append(frame_mod.Color.from_color(color))
+        if kwargs["color"] is not None:
+            frames.append(frame_mod.Color.from_color(kwargs["color"]))
 
-        if description is not None:
-            frames.extend(frame_mod.Text.from_text(description))
+        if kwargs["description"] is not None:
+            frames.extend(frame_mod.Text.from_text(kwargs["description"]))
 
         return frames
 
-    def _assert_schedule(
-        self,
-        date: datetime.date,
-        start_time: Optional[datetime.time],
-        end_time: Optional[datetime.time],
-        alarm_time: Optional[datetime.time],
-        illustration: Optional[int],
-        description: Optional[str],
-        color: Optional[frame_mod.Colors],
-    ) -> None:
-        frames = self._get_frames(
-            date,
-            start_time,
-            end_time,
-            alarm_time,
-            illustration,
-            description,
-            color,
-        )
 
-        schedule = record_mod.Schedule.from_frames(frames)
-        self.assertEqual(schedule.date, date)
-        self.assertEqual(schedule.start_time, start_time)
-        self.assertEqual(schedule.end_time, end_time)
-        self.assertEqual(schedule.alarm_time, alarm_time)
-        self.assertEqual(schedule.illustration, illustration)
-        self.assertEqual(schedule.description, description)
-        self.assertEqual(schedule.color, color)
+# class ReminderTest(RecordTestCase):
+#     RECORD_CLASS = record_mod.Reminder
+#
+#     def get_cases_kwargs(self) -> List[Dict[str, Any]]:
+#         return [
+#             {
+#             },
+#         ]
+#
+#     def get_frames(self, kwargs: Dict[str, Any]) -> List[frame_mod.Frame]:
+#         raise NotImplementedError
 
-    def test_from_frames(self) -> None:
-        self._assert_schedule(
-            date=datetime.date(2020, 11, 1),
-            start_time=None,
-            end_time=None,
-            alarm_time=None,
-            illustration=None,
-            description="do something",
-            color=None,
-        )
-        self._assert_schedule(
-            date=datetime.date(2020, 11, 1),
-            start_time=datetime.time(23, 3),
-            end_time=None,
-            alarm_time=None,
-            illustration=None,
-            description=None,
-            color=None,
-        )
-        self._assert_schedule(
-            date=datetime.date(2020, 11, 1),
-            start_time=datetime.time(22, 3),
-            end_time=datetime.time(23, 4),
-            alarm_time=None,
-            illustration=None,
-            description=None,
-            color=None,
-        )
-        self._assert_schedule(
-            date=datetime.date(2020, 11, 1),
-            start_time=datetime.time(22, 3),
-            end_time=datetime.time(23, 4),
-            alarm_time=datetime.time(21, 0),
-            illustration=None,
-            description=None,
-            color=None,
-        )
-        self._assert_schedule(
-            date=datetime.date(2020, 11, 1),
-            start_time=datetime.time(22, 3),
-            end_time=datetime.time(23, 4),
-            alarm_time=datetime.time(21, 0),
-            illustration=3,
-            description="Do something",
-            color=frame_mod.Colors.ORANGE,
-        )
+# class ToDoTest(RecordTestCase):
+#     RECORD_CLASS = record_mod.ToDo
+#
+#     def get_cases_kwargs(self) -> List[Dict[str, Any]]:
+#         return [
+#             {
+#             },
+#         ]
+#
+#     def get_frames(self, kwargs: Dict[str, Any]) -> List[frame_mod.Frame]:
+#         raise NotImplementedError
 
-    def _assert_frames(
-        self,
-        date: datetime.date,
-        start_time: Optional[datetime.time],
-        end_time: Optional[datetime.time],
-        alarm_time: Optional[datetime.time],
-        illustration: Optional[int],
-        description: Optional[str],
-        color: Optional[frame_mod.Colors],
-    ) -> None:
-        schedule = record_mod.Schedule(
-            date,
-            start_time,
-            end_time,
-            alarm_time,
-            illustration,
-            description,
-            color,
-        )
-
-        self.assertEqual(
-            schedule.to_frames(),
-            self._get_frames(
-                date,
-                start_time,
-                end_time,
-                alarm_time,
-                illustration,
-                description,
-                color,
-            ),
-        )
-
-    def test_to_frames(self) -> None:
-        self._assert_frames(
-            date=datetime.date(2020, 11, 1),
-            start_time=None,
-            end_time=None,
-            alarm_time=None,
-            illustration=None,
-            description="do something",
-            color=None,
-        )
-        self._assert_frames(
-            date=datetime.date(2020, 11, 1),
-            start_time=datetime.time(23, 3),
-            end_time=None,
-            alarm_time=None,
-            illustration=None,
-            description=None,
-            color=None,
-        )
-        self._assert_frames(
-            date=datetime.date(2020, 11, 1),
-            start_time=datetime.time(22, 3),
-            end_time=datetime.time(23, 4),
-            alarm_time=None,
-            illustration=None,
-            description=None,
-            color=None,
-        )
-        self._assert_frames(
-            date=datetime.date(2020, 11, 1),
-            start_time=datetime.time(22, 3),
-            end_time=datetime.time(23, 4),
-            alarm_time=datetime.time(21, 0),
-            illustration=None,
-            description=None,
-            color=None,
-        )
-        self._assert_frames(
-            date=datetime.date(2020, 11, 1),
-            start_time=datetime.time(22, 3),
-            end_time=datetime.time(23, 4),
-            alarm_time=datetime.time(21, 0),
-            illustration=3,
-            description="Do something",
-            color=frame_mod.Colors.ORANGE,
-        )
-
-
-# class ReminderTest(TestCase):
-#     def test_from_frames(self) -> None:
-#         pass
-#     def test_to_frames(self) -> None:
-#         pass
-# class ToDoTest(TestCase):
-#     def test_from_frames(self) -> None:
-#         pass
-#     def test_to_frames(self) -> None:
-#         pass
-# class ExpenseTest(TestCasselfe): -> None:
-#         pass
-#     def test_to_frames(self) -> None:
-#         pass
-#     def test_from_frames()
+# class ExpenseTest(RecordTestCase):
+#     RECORD_CLASS = record_mod.Expense
+#
+#     def get_cases_kwargs(self) -> List[Dict[str, Any]]:
+#         return [
+#             {
+#             },
+#         ]
+#
+#     def get_frames(self, kwargs: Dict[str, Any]) -> List[frame_mod.Frame]:
+#         raise NotImplementedError

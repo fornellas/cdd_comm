@@ -80,24 +80,25 @@ class Telephone(Record):
         return "\n".join(field_str)
 
     def __str__(self) -> str:
-        info_str = f"Telephone: {self.name}"
+        info_str = f"Telephone: {repr(self.name)}"
         if self.number is not None:
-            info_str += f", {self.number}"
+            info_str += f", {repr(self.number)}"
         if self.address is not None:
-            info_str += f", {self.address}"
+            info_str += f", {repr(self.address)}"
         if self.field1 is not None:
-            info_str += f", {self.field1}"
+            info_str += f", {repr(self.field1)}"
         if self.field2 is not None:
-            info_str += f", {self.field2}"
+            info_str += f", {repr(self.field2)}"
         if self.field3 is not None:
-            info_str += f", {self.field3}"
+            info_str += f", {repr(self.field3)}"
         if self.field4 is not None:
-            info_str += f", {self.field4}"
+            info_str += f", {repr(self.field4)}"
         if self.field5 is not None:
-            info_str += f", {self.field5}"
+            info_str += f", {repr(self.field5)}"
         if self.field6 is not None:
-            info_str += f", {self.field6}"
-        info_str += f" ({self.color})"
+            info_str += f", {repr(self.field6)}"
+        if self.color is not None:
+            info_str += f" ({self.color.name})"
         return info_str
 
     @classmethod
@@ -286,7 +287,10 @@ class Memo(Record):
     DESCRIPTION: str = "Memo"
 
     def __str__(self) -> str:
-        return f"Memo: {repr(self.text)}"
+        info_str = f"Memo: {repr(self.text)}"
+        if self.color is not None:
+            info_str += f" ({self.color.name})"
+        return info_str
 
     @classmethod
     def from_frames(cls, frames: List[frame_mod.Frame]) -> "Memo":
@@ -312,12 +316,16 @@ class Memo(Record):
         return frames
 
 
+CalendarDays = Set[int]
+CalendarDayColors = Optional[List[frame_mod.Colors]]
+
+
 @dataclass
 class Calendar(Record):
     year: int
     month: int
-    days: Set[int]
-    colors: Optional[List[frame_mod.Colors]]
+    days: CalendarDays
+    colors: CalendarDayColors
 
     DIRECTORY: ClassVar[Type[frame_mod.Directory]] = frame_mod.CalendarDirectory
 
@@ -331,13 +339,13 @@ class Calendar(Record):
                 color = self.colors[date - 1].name[0].lower()
             highlight = "*" if date in self.days else ""
             info_list.append(f"{date}{color}{highlight}")
-        return f"{self.DESCRIPTION}: " + " ".join(info_list)
+        return f"{self.DESCRIPTION}: {self.year}-{self.month}: " + " ".join(info_list)
 
     @classmethod
     def from_frames(cls, frames: List[frame_mod.Frame]) -> "Calendar":
         year: int = 0
         month: int = 0
-        days: Set[int] = set()
+        days: CalendarDays = set()
         colors: Optional[List[frame_mod.Colors]] = None
         for f in frames:
             if isinstance(f, frame_mod.Date):
@@ -400,7 +408,7 @@ class Schedule(Record):
             raise ValueError("cant set alarm time without start time")
 
     def __str__(self) -> str:
-        return f"Schedule: {self.date}, {self.start_time}, {self.end_time}, {self.alarm_time}, {self.illustration}, {self.description} ({self.color})"
+        return f"Schedule: {self.date}, {self.start_time}, {self.end_time}, {self.alarm_time}, {self.illustration}, {repr(self.description)} ({self.color})"
 
     @classmethod
     def from_frames(cls, frames: List[frame_mod.Frame]) -> "Schedule":
