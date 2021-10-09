@@ -61,12 +61,6 @@ class Decoder(sigrokdecode.Decoder):
             "default": "TX",
             "values": ("TX", "RX"),
         },
-        {
-            "id": "receiver",
-            "desc": "Receiver of data",
-            "default": "RX",
-            "values": ("TX", "RX"),
-        },
     )
     annotations: Tuple[Tuple[str, str], ...] = _ANNOTATIONS
     annotation_rows = (
@@ -431,10 +425,10 @@ class Decoder(sigrokdecode.Decoder):
         if rxtx == 0:
             if self.options["sender"] == "RX":
                 self._decode_sender(startsample, endsample, datavalue)
-            if self.options["receiver"] == "RX":
+            else:
                 self._decode_receiver(startsample, endsample, datavalue)
         elif rxtx == 1:
             if self.options["sender"] == "TX":
                 self._decode_sender(startsample, endsample, datavalue)
-            if self.options["receiver"] == "TX":
+            else:
                 self._decode_receiver(startsample, endsample, datavalue)
