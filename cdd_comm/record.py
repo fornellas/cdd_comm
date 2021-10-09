@@ -708,7 +708,9 @@ class Expense(Record):
 
         date_str = fields[0]
         assert date_str is not None
-        year_str, month_str, day_str = date_str.split(" ")
+        year_str = date_str[0:4]
+        month_str = date_str[4:6]
+        day_str = date_str[6:8]
         date = datetime.date(int(year_str), int(month_str), int(day_str))
 
         amount_str = fields[1]
@@ -748,7 +750,8 @@ class Expense(Record):
         frames.extend(
             frame_mod.Text.from_text_list(
                 [
-                    "{} {} {}".format(
+                    "%4d%2d%2d"
+                    % (
                         self.date.year,
                         self.date.month,
                         self.date.day,

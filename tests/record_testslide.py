@@ -630,7 +630,8 @@ class ExpenseTest(RecordTestCase):
         frames.extend(
             frame_mod.Text.from_text_list(
                 [
-                    "{} {} {}".format(
+                    "%4d%2d%2d"
+                    % (
                         kwargs["date"].year,
                         kwargs["date"].month,
                         kwargs["date"].day,
