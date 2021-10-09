@@ -430,17 +430,71 @@ class ScheduleTest(RecordTestCase):
         return frames
 
 
-# class ReminderTest(RecordTestCase):
-#     RECORD_CLASS = record_mod.Reminder
-#
-#     def get_cases_kwargs(self) -> List[Dict[str, Any]]:
-#         return [
-#             {
-#             },
-#         ]
-#
-#     def get_frames(self, kwargs: Dict[str, Any]) -> List[frame_mod.Frame]:
-#         raise NotImplementedError
+class ReminderTest(RecordTestCase):
+    RECORD_CLASS = record_mod.Reminder
+
+    def get_cases_kwargs(self) -> List[Dict[str, Any]]:
+        return [
+            {
+                "month": None,
+                "day": None,
+                "alarm_time": None,
+                "description": "Do something",
+                "color": None,
+            },
+            {
+                "month": None,
+                "day": None,
+                "alarm_time": datetime.time(15, 33),
+                "description": "Do something",
+                "color": frame_mod.Colors.ORANGE,
+            },
+            {
+                "month": None,
+                "day": 30,
+                "alarm_time": None,
+                "description": "Do something",
+                "color": frame_mod.Colors.ORANGE,
+            },
+            {
+                "month": None,
+                "day": 30,
+                "alarm_time": datetime.time(15, 33),
+                "description": "Do something",
+                "color": frame_mod.Colors.ORANGE,
+            },
+            {
+                "month": 12,
+                "day": 30,
+                "alarm_time": datetime.time(15, 33),
+                "description": "Do something",
+                "color": None,
+            },
+            {
+                "month": 12,
+                "day": 30,
+                "alarm_time": datetime.time(15, 33),
+                "description": "Do something",
+                "color": frame_mod.Colors.ORANGE,
+            },
+        ]
+
+    def get_frames(self, kwargs: Dict[str, Any]) -> List[frame_mod.Frame]:
+        frames: List[frame_mod.Frame] = []
+
+        frames.append(frame_mod.Date.from_values(None, kwargs["month"], kwargs["day"]))
+
+        if kwargs["alarm_time"] is not None:
+            frames.append(frame_mod.Alarm.from_time(kwargs["alarm_time"]))
+
+        if kwargs["description"] is not None:
+            frames.extend(frame_mod.Text.from_text(kwargs["description"]))
+
+        if kwargs["color"] is not None:
+            frames.append(frame_mod.Color.from_color(kwargs["color"]))
+
+        return frames
+
 
 # class ToDoTest(RecordTestCase):
 #     RECORD_CLASS = record_mod.ToDo

@@ -408,7 +408,10 @@ class Schedule(Record):
             raise ValueError("cant set alarm time without start time")
 
     def __str__(self) -> str:
-        return f"Schedule: {self.date}, {self.start_time}, {self.end_time}, {self.alarm_time}, {self.illustration}, {repr(self.description)} ({self.color})"
+        info_str = f"Schedule: {self.date}, {self.start_time}, {self.end_time}, {self.alarm_time}, {self.illustration}, {repr(self.description)}"
+        if self.color is not None:
+            info_str += f" ({self.color.name})"
+        return info_str
 
     @classmethod
     def from_frames(cls, frames: List[frame_mod.Frame]) -> "Schedule":
@@ -511,10 +514,12 @@ class Reminder(Record):
         else:
             info_str += "-- "
         if self.alarm_time:
-            info_str += f"{self.alarm_time.hour}:{self.alarm_time.minute}"
+            info_str += f"{self.alarm_time}"
         else:
             info_str += "--:--"
-        info_str += f" {self.description}"
+        info_str += f" {repr(self.description)}"
+        if self.color is not None:
+            info_str += f" ({self.color.name})"
         return info_str
 
     @classmethod
@@ -546,7 +551,20 @@ class Reminder(Record):
         return cls(month, day, alarm_time, description, color)
 
     def to_frames(self) -> List[frame_mod.Frame]:
-        raise NotImplementedError
+        frames: List[frame_mod.Frame] = []
+
+        frames.append(frame_mod.Date.from_values(None, self.month, self.day))
+
+        if self.alarm_time is not None:
+            frames.append(frame_mod.Alarm.from_time(self.alarm_time))
+
+        if self.description is not None:
+            frames.extend(frame_mod.Text.from_text(self.description))
+
+        if self.color is not None:
+            frames.append(frame_mod.Color.from_color(self.color))
+
+        return frames
 
 
 @dataclass
