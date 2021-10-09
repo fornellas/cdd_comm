@@ -61,9 +61,7 @@ class FlowControlSerial:
                     break
             if self._serial.write([b]) != 1:
                 raise RuntimeError("Short write!")
-            # Without this delay, the serial buffer fills quickly and there's
-            # no time to process XOFF requests, resulting in NACKs.
-            time.sleep(0.0006)
+            time.sleep(9.0 / self.baudrate)
 
     def read(self) -> int:
         if self._read_buff:
@@ -116,11 +114,13 @@ class Sender:
     def _send_frame(self, ser: FlowControlSerial, frame: frame_mod.Frame) -> None:
         # print(f"  > Frame: {frame}")
         ser.write(frame.bytes())
+        time.sleep(0.040)
 
     def _wait_for_ack(self, ser: FlowControlSerial) -> None:
         read = ser.read()
         if read == self.ACK:
             print("< ACK")
+            time.sleep(0.030)
             return
         elif read == self.NACK:
             print("< NACK")
