@@ -69,7 +69,7 @@ flake8: isort
 .PHONY: mypy
 mypy: flake8
 	@printf "${TERM_BRIGHT}MYPY${TERM_NONE}\n"
-	$(Q) mypy --warn-unused-configs ${SRCS_PATH}
+	$(Q) mypy --warn-unused-configs --show-error-codes ${SRCS_PATH}
 
 .PHONY: mypy-clean
 mypy-clean:
