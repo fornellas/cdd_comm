@@ -773,7 +773,7 @@ class EndOfRecordTest(TestCase):
         self.assertEqual(frame.address, frame_mod.EndOfRecord.ADDRESS)
         self.assertEqual(frame.data, [])
 
-    def assert_match(self, directory_class: Type[frame_mod.Directory]) -> None:
+    def test_assert_match(self) -> None:
         self.assertTrue(
             type(
                 frame_mod.Frame.from_data(
@@ -796,7 +796,7 @@ class EndOfTransmissionTest(TestCase):
         self.assertEqual(frame.address, frame_mod.EndOfTransmission.ADDRESS)
         self.assertEqual(frame.data, [])
 
-    def assert_match(self, directory_class: Type[frame_mod.Directory]) -> None:
+    def test_assert_match(self) -> None:
         self.assertTrue(
             type(
                 frame_mod.Frame.from_data(
