@@ -441,6 +441,30 @@ class Date(TextDataFrame):
     ADDRESS: ClassVar[int] = 0x0
 
     @classmethod
+    def from_values(
+        cls, year: Optional[int], month: Optional[int], day: Optional[int]
+    ) -> "Date":
+        year_str = "----"
+        if year is not None:
+            year_str = "%.4d" % (year)
+        month_str = "--"
+        if month is not None:
+            month_str = "%.2d" % (month)
+        day_str = "--"
+        if day is not None:
+            day_str = "%.2d" % day
+        data: List[int] = [
+            cls.UNICODE_TO_CASIO[c] for c in f"{year_str}-{month_str}-{day_str}"
+        ]
+        return cls(
+            length=cls.LENGTH,
+            frame_type=cls.TYPE,
+            address=cls.ADDRESS,
+            data=data,
+            checksum=cls.calculate_checksum(cls.LENGTH, cls.TYPE, cls.ADDRESS, data),
+        )
+
+    @classmethod
     def from_date(cls, date: datetime.date) -> "Date":
         data: List[int] = [
             cls.UNICODE_TO_CASIO[c]

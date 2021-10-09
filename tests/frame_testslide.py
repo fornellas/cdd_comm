@@ -173,6 +173,32 @@ class DateTest(TestCase):
     TYPE: ClassVar[int] = frame_mod.Date.TYPE
     ADDRESS: ClassVar[int] = frame_mod.Date.ADDRESS
 
+    def test_from_values(self) -> None:
+        year = 2023
+        month = 12
+        day = 30
+
+        date = frame_mod.Date.from_values(year, month, day)
+        self.assertEqual(date.year, year)
+        self.assertEqual(date.month, month)
+        self.assertEqual(date.day, day)
+        self.assertEqual(date.date, datetime.date(year, month, day))
+
+        date = frame_mod.Date.from_values(None, month, day)
+        self.assertEqual(date.year, None)
+        self.assertEqual(date.month, month)
+        self.assertEqual(date.day, day)
+
+        date = frame_mod.Date.from_values(None, None, day)
+        self.assertEqual(date.year, None)
+        self.assertEqual(date.month, None)
+        self.assertEqual(date.day, day)
+
+        date = frame_mod.Date.from_values(None, None, None)
+        self.assertEqual(date.year, None)
+        self.assertEqual(date.month, None)
+        self.assertEqual(date.day, None)
+
     def test_from_date(self) -> None:
         year = 2023
         month = 12
@@ -180,8 +206,8 @@ class DateTest(TestCase):
         date = frame_mod.Date.from_date(datetime.date(year, month, day))
         self.assertEqual(date.year, year)
         self.assertEqual(date.month, month)
-        self.assertEqual(date.month, month)
         self.assertEqual(date.day, day)
+        self.assertEqual(date.date, datetime.date(year, month, day))
 
     def _get_date(self, date_str: str) -> frame_mod.Date:
         return cast(
